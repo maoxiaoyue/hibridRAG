@@ -1,9 +1,0 @@
-2026/07/07 20:32:45 [INFO] pub_client starting | gateway_addr=192.168.50.104:9090 agent_id=agent-main
-2026/07/07 20:34:20 [INFO] pub_client starting | gateway_addr=192.168.50.104:9090 agent_id=agent-main
-2026/07/07 20:35:04 [ERROR] chat failed: chat: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing: dial tcp 114.33.17.22:9090: connectex: No connection could be made because the target machine actively refused it."
-2026/07/07 20:57:59 [INFO] pub_client starting | gateway_addr=cxwoo.com:9090 agent_id=agent-main
-2026/07/07 20:58:28 [ERROR] chat failed: chat: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing: dial tcp 114.33.17.22:9090: connectex: No connection could be made because the target machine actively refused it."
-2026/07/07 20:59:07 [INFO] pub_client starting | gateway_addr=cxwoo.com:9090 agent_id=agent-main
-2026/07/07 20:59:26 [ERROR] chat failed: chat: rpc error: code = Unauthenticated desc = api key invalid or revoked
-2026/07/08 10:58:09 [INFO] pub_client starting | gateway_addr=cxwoo.com:41909 agent_id=agent-main
-2026/07/08 11:08:50 [INFO] pub_client starting | gateway_addr=cxwoo.com:41909 agent_id=agent-main

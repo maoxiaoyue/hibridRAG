@@ -1,0 +1,87 @@
+# ---- 依需求排除：YAML / Markdown ----
+*.yaml
+*.yml
+*.md
+
+# ---- Go build 產物 ----
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+*.a
+*.o
+/bin/
+/dist/
+
+# ---- Go 測試 / 覆蓋率 / profile ----
+*.cover
+*.coverprofile
+coverage.txt
+coverage.html
+*.prof
+*.pprof
+
+# ---- Go workspace ----
+go.work
+go.work.sum
+
+# ---- 環境變數 / 機密 ----
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+certs/
+certs-internal/
+
+# ---- 日誌 ----
+*.log
+logs/
+
+# ---- 資料庫 / 本機資料 ----
+*.db
+*.sqlite
+*.sqlite3
+*.duckdb
+*.duckdb.wal
+*.kz
+uploads/
+
+# ---- Android ----
+*.apk
+*.aab
+
+# ---- 編輯器 / IDE ----
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# ---- OS ----
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ---- 暫存 / 備份 ----
+tmp/
+temp/
+*.tmp
+*.bak
+*.orig
+*.rej
+
+# ---- Claude Code 本機設定 ----
+.claude/settings.local.json
