@@ -1,0 +1,135 @@
+syntax = "proto3";
+
+package graphic_input.v1;
+
+option go_package = "graphic_input/pb/graphic_inputpb;graphic_inputpb";
+
+// GraphicInputService — 知識圖譜人工輸入（內網 dev_090 專用）。
+// 文件雙路徑：Obsidian（落地 vault 筆記，走 agent_graph 同步管線）與
+// PG（agent_graph IngestText 直接抽取進圖）；另有結構化 entity/relation 直接輸入。
+service GraphicInputService {
+  // UploadDocuments 文件雙路徑輸入（client-streaming：首則 meta，後續 file chunk）。
+  rpc UploadDocuments(stream DocChunk) returns (UploadResult);
+
+  // 結構化直接輸入
+  rpc UpsertEntity(UpsertEntityReq) returns (UpsertEntityResp);
+  rpc UpsertRelation(UpsertRelationReq) returns (UpsertRelationResp);
+  rpc CheckDuplicates(CheckDuplicatesReq) returns (CheckDuplicatesResp);
+  rpc BatchImport(stream BatchRow) returns (BatchResult);
+
+  rpc ListInputLog(ListInputLogReq) returns (ListInputLogResp);
+}
+
+// ---- 文件上傳 ----
+
+message DocMeta {
+  string targets = 1; // "obsidian" | "pg" | "both"
+  repeated string tags = 2;
+  string actor = 3;
+}
+
+message DocChunk {
+  DocMeta meta = 1;    // 只在第一則訊息帶
+  string file_name = 2;
+  bytes data = 3;      // 建議 ≤64KB/則；同 file_name 續寫
+}
+
+message DocResult {
+  string file = 1;
+  int32 extracted_chars = 2;
+  string obsidian_path = 3;      // obsidian 路徑產物（vault 相對路徑）
+  int32 pg_entities = 4;         // pg 路徑抽取統計
+  int32 pg_relations_merged = 5;
+  int32 pg_relations_proposed = 6;
+  int32 pg_embeddings = 7;
+  string error = 8;              // 單檔失敗不中斷整批
+}
+
+message UploadResult {
+  repeated DocResult results = 1;
+}
+
+// ---- 結構化輸入 ----
+
+message EntityInput {
+  string name = 1;
+  string category = 2;
+  string description = 3;
+}
+
+message UpsertEntityReq {
+  EntityInput entity = 1;
+  bool force = 2;   // 重複偵測有候選時預設拒絕；force=true 強制新建
+  string actor = 3;
+}
+
+message SimilarCandidate {
+  string name = 1;
+  string category = 2;
+  string description = 3;
+}
+
+message UpsertEntityResp {
+  bool written = 1;                          // false = 被重複偵測擋下（見 candidates）
+  bool embedding_synced = 2;
+  repeated SimilarCandidate candidates = 3;
+}
+
+message UpsertRelationReq {
+  string source = 1;
+  string target = 2;
+  string type = 3;   // 空 → "related_to"
+  string actor = 4;
+}
+
+message UpsertRelationResp {
+  bool ok = 1;
+}
+
+message CheckDuplicatesReq {
+  string name = 1;
+}
+
+message CheckDuplicatesResp {
+  repeated SimilarCandidate candidates = 1;
+}
+
+// ---- 批次匯入 ----
+
+message BatchRow {
+  string kind = 1;      // "entity" | "relation"（每列自帶，允許混合批次）
+  EntityInput entity = 2;
+  UpsertRelationReq relation = 3;
+  string actor = 4;     // 只需在第一列帶
+}
+
+message BatchRowResult {
+  int32 index = 1;
+  string result = 2;    // ok | rejected_duplicate | error:<msg>
+}
+
+message BatchResult {
+  int32 ok = 1;
+  int32 failed = 2;
+  repeated BatchRowResult rows = 3;
+}
+
+// ---- 輸入歷史 ----
+
+message ListInputLogReq {
+  int32 limit = 1;   // <=0 → 50
+}
+
+message InputLogEntry {
+  string id = 1;
+  string actor = 2;
+  string action = 3;   // upload_doc | upsert_entity | upsert_relation | batch_import
+  string target = 4;   // obsidian | pg | both | -
+  string payload_json = 5;
+  string result = 6;
+  string created_at = 7; // RFC3339
+}
+
+message ListInputLogResp {
+  repeated InputLogEntry entries = 1;
+}

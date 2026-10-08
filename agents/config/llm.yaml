@@ -1,0 +1,34 @@
+# HypGo LLM 智慧增強配置
+# 放置於 config/llm.yaml 或 .hyp/llm.yaml
+# 使用方式：hyp context --llm config/llm.yaml
+
+# ============================================================
+# mode: 控制 LLM 增強模式
+# ============================================================
+# "none"   — 不使用 LLM，只做純 Go 推斷（零成本，預設值）
+# "ollama" — 連接本地 Ollama 伺服器
+# "api"    — 連接遠端 API（OpenAI / Anthropic / Gemini）
+# "rag"    — RAG 模式（向量資料庫 + embedding + LLM 生成）
+
+mode: ollama
+
+# ============================================================
+# Mode 1: Ollama（本地模型，零費用，建議開發用）
+# ============================================================
+# 前置條件：安裝 Ollama (https://ollama.com) 並下載模型
+#   ollama pull llama3
+#   ollama pull codellama
+
+# mode: ollama
+ollama:
+  url: "${OLLAMA_URL:-http://192.168.50.104:11434}"  # 可由 env 覆寫；11434 是預設 Ollama port
+  # model 與 role 二擇一：
+  #   - model 寫死 → 直接使用（最高優先）
+  #   - model 留空、role 設值 → 由 services.ModelRegistry 依用途解析
+  #     （role 可選：chat / chat_fast / chat_quality / chat_long /
+  #                  tool_calling / reasoning / uncensored / chunking）
+  model: "${OLLAMA_MODEL:-gemma4:e4b}"               # 模型名稱（留空 → 由 role 決定）
+  role: ""                                            # 例 "tool_calling" → qwen3.5:9b
+  timeout: 180                                        # 秒；vision + 12B 多模態單次呼叫實測 ~21s，
+                                                      # 冷啟動或大圖可再翻倍，30s 太緊，180s 覆蓋
+  max_tokens: 65536                                   # 最大回應 token 數

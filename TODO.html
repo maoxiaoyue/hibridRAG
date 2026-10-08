@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>Single Agent Platform — TODO</title>
+<style>
+  :root {
+    --p0: #e74c3c; --p1: #e67e22; --p2: #f1c40f;
+    --p3: #3498db; --p4: #9b59b6; --p5: #95a5a6; --p6: #16a085; --p7: #2980b9;
+    --done: #27ae60; --drop: #7f8c8d;
+    --bg: #f5f7fa; --card: #fff; --text: #2c3e50; --muted: #7f8c8d;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", "Microsoft JhengHei", sans-serif;
+    background: var(--bg); color: var(--text); margin: 0; padding: 24px;
+    line-height: 1.6;
+  }
+  h1 { margin-top: 0; border-bottom: 3px solid var(--p0); padding-bottom: 8px; }
+  .meta { color: var(--muted); font-size: 0.9em; margin-bottom: 24px; }
+  .legend { margin: 16px 0; display: flex; flex-wrap: wrap; gap: 8px; }
+  .badge {
+    display: inline-block; padding: 2px 10px; border-radius: 12px;
+    font-size: 0.8em; color: white; font-weight: bold;
+  }
+  .b-p0 { background: var(--p0); }
+  .b-p1 { background: var(--p1); }
+  .b-p2 { background: var(--p2); color: #333; }
+  .b-p3 { background: var(--p3); }
+  .b-p4 { background: var(--p4); }
+  .b-p5 { background: var(--p5); }
+  .b-p6 { background: var(--p6); }
+  .b-p7 { background: var(--p7); }
+  .b-drop { background: var(--drop); }
+  .b-done { background: var(--done); }
+  section {
+    background: var(--card); border-radius: 8px; padding: 16px 24px;
+    margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  section.p0 { border-left: 5px solid var(--p0); }
+  section.p1 { border-left: 5px solid var(--p1); }
+  section.p2 { border-left: 5px solid var(--p2); }
+  section.p3 { border-left: 5px solid var(--p3); }
+  section.p4 { border-left: 5px solid var(--p4); }
+  section.p5 { border-left: 5px solid var(--p5); }
+  section.p6 { border-left: 5px solid var(--p6); }
+  section.p7 { border-left: 5px solid var(--p7); }
+  h2 { margin-top: 0; }
+  h3 { color: var(--text); margin-top: 18px; margin-bottom: 6px; }
+  ul { padding-left: 22px; margin: 6px 0; }
+  li { margin: 3px 0; }
+  .dropped { text-decoration: line-through; color: var(--drop); }
+  code {
+    background: #f0f2f5; padding: 1px 6px; border-radius: 3px;
+    font-family: "Consolas", "Cascadia Code", monospace; font-size: 0.9em;
+  }
+  .note {
+    background: #fff8e1; border-left: 3px solid #f39c12;
+    padding: 8px 12px; margin: 8px 0; font-size: 0.92em;
+  }
+  .order {
+    background: #ecf0f1; padding: 12px 18px; border-radius: 6px;
+    font-family: monospace; white-space: pre-wrap; font-size: 0.9em;
+  }
+  input[type=checkbox] { margin-right: 6px; }
+</style>
+</head>
+<body>
+
+<h1>Single Agent Platform — 未完成項目</h1>
+<div class="meta">
+  整合來源：TODO.md / TODO2.md / TODO3.md ・ 最後更新：<b>2026-07-03</b>（agent_client 內建 Coding Agent + semantic/shared/short-term 記憶補齊 + agent_memory gRPC 化 + 全服務 TLS）
+  ・ 依優先級分組（P0 最高）
+</div>
+
+<div class="legend">
+  <span class="badge b-p0">P0 核心 RAG</span>
+  <span class="badge b-p1">P1 功能增強</span>
+  <span class="badge b-p2">P2 測試品質</span>
+  <span class="badge b-p3">P3 接入 / 文件</span>
+  <span class="badge b-p4">P4 架構 v2</span>
+  <span class="badge b-p5">P5 雜項</span>
+  <span class="badge b-p6">P6 Memory v2</span>
+  <span class="badge b-p7">P7 Agent Client</span>
+  <span class="badge b-drop">已放棄</span>
+</div>
+
+<!-- ───────── 2026-06-06 完成（ModelRegistry） ───────── -->
+<section style="border-left:5px solid var(--done);">
+  <h2><span class="badge b-done">2026-06-06 完成</span> ModelRegistry — chat / vision / embedding 模型統一管理</h2>
+  <p class="muted" style="margin-top:-6px;">將 192.168.50.104:11434 上 14 顆模型集中為單一事實來源，依「用途（role）」自動挑模型；既有 LLM 與 Vision 配線改走 registry。</p>
+  <ul>
+    <li><input type="checkbox" checked> <b>新檔</b> <code>agents/app/services/model_registry.go</code> — 14 顆 model spec（gemma4:12b / gemma4:e4b / gemma4-64k / qwen3.5:9b / qwen3.5:35b / qwen3-14b-un / qwen3-vl:4b / minicpm-v / bge-m3 + 2 顆未載入：Mellum2-Thinking、mmproj-Uncensored-Vision）；能力旗標：<code>chat / tools / vision / embedding / thinking / long-context / uncensored</code></li>
+    <li><input type="checkbox" checked> 11 種 <code>ModelRole</code>：<code>chat / chat_fast / chat_quality / chat_long / tool_calling / reasoning / vision / vision_uncensored / embedding / chunking / uncensored</code>；解析時優先「ロード済み」，未載入自動 fallback</li>
+    <li><input type="checkbox" checked> <code>OllamaConfig.Role</code> 新欄位（<code>llm_client.go</code>）；<code>VisionConfig.Role</code> 新欄位（<code>config/config.go</code>）；<code>ApplyToOllamaConfig(*OllamaConfig, defaultRole)</code> helper</li>
+    <li><input type="checkbox" checked> <code>main.go</code> 配線：啟動時建 <code>DefaultModelRegistry()</code>，LLM 與 Vision 兩條路徑都改走 registry 解析（明示 model 仍最高優先，model 空 + role → registry，雙空 → defaultRole）</li>
+    <li><input type="checkbox" checked> <code>config/llm.yaml</code> 加 <code>role:</code> 說明；<code>config/config.yaml</code> 視覺改為 <code>role: "vision"</code>（model 留空 → registry → qwen3-vl:4b）</li>
+    <li><input type="checkbox" checked> 測試 9 cases 全 PASS（<code>model_registry_test.go</code>：Resolve 優先載入 / Skip 未載入 / Fallback / List by capability / OllamaConfigFor / VisionExtractorFor / Apply 四場景 / Capability String）</li>
+  </ul>
+  <div class="note">使用方式：<code>reg.ModelFor(services.RoleToolCalling)</code> → <code>"qwen3.5:9b"</code>；YAML 中 <code>model: ""</code> + <code>role: "tool_calling"</code> 即自動切換到 qwen3.5:9b。既有 YAML（明示 model）行為完全相容。</div>
+</section>
+
+<!-- ───────── 2026-07-02 ~ 07-03 完成 ───────── -->
+<section style="border-left:5px solid var(--done);">
+  <h2><span class="badge b-done">2026-07-02 ~ 07-03 完成</span> agent_client 內建 Coding Agent + 6 類記憶補齊 + agent_memory gRPC 化 + 全服務 TLS</h2>
+  <p class="muted" style="margin-top:-6px;">兩批工作：7/2 agent_client 端（尚未 commit）、7/3 後端記憶與傳輸層（已 commit：<code>3cdc0a5</code>、<code>ca19559</code>）。</p>
+  <ul>
+    <li><input type="checkbox" checked> <b>agent_client → HypGo 風格重構</b>：<code>app/{models,services,views}</code>（原 <code>internal/*</code> 佈局）+ typed errors + hypgo logger + desktop schema</li>
+    <li><input type="checkbox" checked> <b>視窗（GUI）背景工具</b>：<code>ToolSpec.Background</code> + <code>launchBackground()</code>（<code>cmd.Start()</code> 不等待、不套 timeout，避免記事本/瀏覽器類程式被誤判逾時砍掉）</li>
+    <li><input type="checkbox" checked> <b>內建 Coding Agent</b>：新檔 <code>code_service.go</code>（18 test cases）+ <code>diff_dialog.go</code> — <code>code_list_files / code_search / code_read_file / code_edit_file / code_write_file</code> 5 工具，比照 Claude Code Read/Grep/Edit/Write 語意；寫入前強制 <code>difflib</code> unified diff 審核彈窗；<code>resolveInWorkspace</code> 用 <code>filepath.Rel</code> 擋 <code>..</code> 逃逸；二進位/非 UTF-8 一律拒讀拒寫</li>
+    <li><input type="checkbox" checked> <b>對話頁 Normal／Code 模式切換</b>（雙重開關）：工作目錄已設 <b>且</b> 手動切到 Code 模式，兩者缺一 <code>BuiltinCodeTools("")</code> 回空，agent 完全看不到碼工具</li>
+    <li><input type="checkbox" checked> <b>agent_registry Search() 路由修正</b>：skill-id 精確比對優先於 JSONB substring，避免撞殘留死資料</li>
+    <li><input type="checkbox" checked> <b>全 5 服務 HTTP/2 + 真 TLS</b>（複用 <code>agents/scripts/gencert/</code>，ECDSA P-256 自簽自驗）+ <b>gRPC TLS</b>（<code>agents:9091</code> / <code>agent_gateway:9090</code>）</li>
+    <li><input type="checkbox" checked> <b>P4-2 完成</b>：agents 改真 gRPC 呼叫 <code>agent_memory</code>（新 <code>memory_grpc_client.go</code>，實際埠 :8510；<code>config.memory.grpc_addr</code> 空則 fallback 直連 DB）</li>
+    <li><input type="checkbox" checked> <b>semantic memory</b> 首次真正跑通（<code>agent_memory</code> LongTermMemoryService），順手修好兩個潛伏 bug：Cassandra 表未建立、gocql <code>[]float32</code> 無法直接 marshal（<code>CQLVector</code> wrapper）</li>
+    <li><input type="checkbox" checked> <b>shared memory</b>：新 PG 表 <code>shared_memory</code>（Bun 複合唯一鍵）+ 新 RPC + <code>agent.pool_id</code></li>
+    <li><input type="checkbox" checked> <b>short-term memory</b>：Redis <code>SessionStore</code>（maxTurns=40，TTL 2h，nil-receiver-safe）接進 <code>ChatSync</code></li>
+  </ul>
+  <div class="note">
+    <b>殘留</b>：<code>agents/app/controllers/memory.go</code>（REST 代理）仍直連 DB，未轉 gRPC。<b>未 commit</b>：agent_client 端 8 個改動檔 + 3 新檔（README / config.go / chat_service.go / tool_service.go / chat_view.go / settings_view.go / tools_view.go + code_service.go / code_service_test.go / diff_dialog.go）。
+  </div>
+</section>
+
+<!-- ───────── P0 ───────── -->
+<section class="p0">
+  <h2><span class="badge b-p0">P0</span> 直接影響推理品質（核心 RAG 鏈路未通）</h2>
+
+  <h3>P0-1：ContextBuilder（TODO2 ⑥） <span class="badge b-done">完成</span></h3>
+  <ul>
+    <li><input type="checkbox" checked> 新建 <code>agents/internal/agent/context/builder.go</code>（含 <code>builder_test.go</code>）</li>
+    <li><input type="checkbox" checked> 實作 <code>Build(ctx, agentID, query) ([]services.ChatMessage, error)</code>（spec 簽名）+ <code>BuildWithPersona(...)</code>（內部 persona-aware 路徑）：
+      <ul>
+        <li><input type="checkbox" checked> PersonalMemory anchor（有 SKILL.md 時由 persona.ToInstruction 內含；無時 DB fallback — 不重複）</li>
+        <li><input type="checkbox"> ProceduralMemory top-3 <b>依 query 相似度</b>（目前 <code>updated_at desc</code>；需 procedural 上 embedding）</li>
+        <li><input type="checkbox" checked> RAG chunks top-5（呼叫 HybridSearcher，見 P0-2）</li>
+        <li><input type="checkbox"> EpisodicMemory top-2 <b>最近相似對話</b>（目前 <code>occurred_at desc</code>；需 episodic.summary 上 embedding）</li>
+      </ul>
+    </li>
+    <li><input type="checkbox" checked> 數量配額讀 <code>config.context.*</code>（三層 fallback：persona override → config → builtin）</li>
+    <li><input type="checkbox" checked> Token 預算控制（<code>max_context_tokens: 4000</code>，CJK-aware <code>HeuristicCounter</code>；可注入 tiktoken）</li>
+  </ul>
+  <div class="note">框架完成。剩餘「相似度排序」兩項屬增強，需要先把 procedural_memory / episodic_memory.summary 上向量索引。</div>
+
+  <h3>P0-2：HybridSearcher / RRF Fusion（TODO2 ⑤） <span class="badge b-done">完成</span></h3>
+  <ul>
+    <li><input type="checkbox" checked> 新建 <code>agents/internal/agent/retrieval/hybrid.go</code>（+ <code>hybrid_test.go</code> 9 cases）</li>
+    <li><input type="checkbox" checked> Dense path：<code>vectordb.HTTPClient</code> → <code>agent_embedding /api/search</code></li>
+    <li class="dropped">Sparse path：BGE-M3 SPLADE 點積（2026-05-08 放棄）</li>
+    <li><input type="checkbox" checked> SparseSearcher 介面預留（預設 <code>NopSparseSearcher</code>；未來可接 PG FTS / remote sparse）</li>
+    <li><input type="checkbox" checked> 並發執行兩路（goroutine + WaitGroup），各自 top-20；任一路失敗仍能回結果</li>
+    <li><input type="checkbox" checked> RRF Fusion：<code>Σ 1/(k + rank+1)</code>，預設 k=60，取 final_top_k=5</li>
+    <li><input type="checkbox" checked> Similarity threshold 過濾（dense 套用；可調 <code>retrieval.similarity_threshold</code>）</li>
+    <li><input type="checkbox" checked> 接到 <code>main.go</code> 取代 <code>vectordb.HTTPClient</code>，新增 <code>config.retrieval.*</code> 區塊</li>
+  </ul>
+
+  <h3>P0-3：agent_grpc.go process() 接入 RAG context <span class="badge b-done">完成</span></h3>
+  <ul>
+    <li><input type="checkbox" checked> <code>process()</code> 流程：<code>loadPersona()</code> → <code>ContextBuilder.BuildWithPersona()</code> → <code>LLM.Chat(system + context + user)</code></li>
+    <li><input type="checkbox" checked> <code>WithContextBuilder(b)</code> + <code>WithEpisodicWriter(w)</code> 兩個 builder methods 注入</li>
+    <li><input type="checkbox" checked> EpisodicMemory 寫入：每輪 inbound user + outbound assistant 寫 <code>episodic_memory.turns</code>（trace_id / message_id / tokens / finish_reason / occurred_at），best-effort 不阻斷主流程</li>
+  </ul>
+
+  <h3><span class="badge b-drop">放棄</span> P0-4：BGE-M3 Sparse 向量寫入</h3>
+  <div class="note">
+    2026-05-08 決策：Ollama backend 只出 dense；自寫 Python 服務 / Go ONNX 推論成本過高（6–9 天 + 對齊風險），當下 corpus 規模 dense ANN 已足。
+    Sparse 路徑改用 PG FTS（<code>sparse_strategy=fts</code>）或 nop；Cassandra 不再規劃 <code>chunks_sparse</code> 表；
+    PG <code>chunks_sparse</code> 仍 DROP（migration 004）；HybridSearcher 框架保留。
+  </div>
+</section>
+
+<!-- ───────── P1 ───────── -->
+<section class="p1">
+  <h2><span class="badge b-p1">P1</span> 功能增強</h2>
+
+  <h3>P1-1：Tool Calling 框架 <span class="badge b-done">完成</span></h3>
+  <ul>
+    <li><input type="checkbox" checked> Tool interface + Registry（<code>tool.go</code>）：<code>Name / Description / Schema</code>（OpenAI / Anthropic 通用 JSON Schema subset）<code>/ Call</code>；含 <code>ToolCall / ToolMessage / ToolResult</code> 型別</li>
+    <li><input type="checkbox" checked> 內建工具（<code>tool_builtin.go</code>）：
+      <ul>
+        <li><code>memory_read</code>（personal / procedural / episodic 三選一）</li>
+        <li><code>memory_write</code>（procedural upsert）</li>
+        <li><code>rag_query</code>（透過 RAGSearcher 介面，自動走 HybridSearcher）</li>
+        <li><code>web_search</code>（<code>tool_web_search.go</code>：可插拔 <code>WebSearchProvider</code> + <code>HTTPSearchProvider</code> 對接 Brave / SerpAPI / Tavily；無 provider 自動 disabled）</li>
+      </ul>
+    </li>
+    <li><input type="checkbox" checked> MCP stdio client（<code>mcp_client.go</code>）：subprocess + JSON-RPC 2.0（initialize / tools/list / tools/call）+ <code>mcpTool</code> 適配為本地 Tool；<code>RegisterMCPTools(reg, client, prefix)</code> 一次掛入</li>
+    <li><input type="checkbox" checked> Tool 回注迴圈（<code>tool_loop.go</code>）：<code>ToolCallerLLM</code> 介面 + <code>RunToolLoop</code>（max iter / per-tool timeout / 未知工具非致命 / messages 原地累積 / ToolTrace 觀測）</li>
+    <li><input type="checkbox" checked> <b>Ollama <code>ChatWithTools</code></b>（<code>llm_ollama_tools.go</code>）：<code>/api/chat</code> tools[] 編碼、tool_calls 解析（合成 id）、tool_result 自動翻為 <code>role=tool</code> + <code>name</code>；compile-time 滿足 <code>ToolCallerLLM</code>。OpenAI / Anthropic 未做（本專案只需 Ollama）。</li>
+    <li><input type="checkbox" checked> 在 <code>agent_grpc.process()</code> 用 <code>RunToolLoop</code> 取代 <code>LLM.Chat</code> + 注入 <code>ToolRegistry</code>（條件式 fallback：tools 空或 LLM 不滿足 ToolCallerLLM → 退回 plain Chat）</li>
+    <li><input type="checkbox" checked> main.go 一鍵接線：<code>toolReg</code> 註冊 memory_read / memory_write / rag_query（透過 <code>ragToolAdapter</code>），啟動 log 顯示 LLM 是否支援 tool calling；<code>config.tools.max_iterations / tool_timeout_sec</code> 可調</li>
+  </ul>
+  <div class="note">P1-1 <b>全數完成</b>。鏈路：Inbound → WorkerPool → process() → ContextBuilder → 條件式 RunToolLoop（Ollama） / LLM.Chat → EpisodicWriter → Outbound。共 7 個 services 檔 + 23 個單元測試 PASS；build + vet 全綠。</div>
+
+  <h3>P1-2：A2A 完整化（TODO3 Phase 1 剩餘）</h3>
+  <ul>
+    <li><input type="checkbox"> <code>a2a_client.go</code> — <code>A2ADispatcher</code>（HTTP JSON-RPC 對外）</li>
+    <li><input type="checkbox"> <code>agent_card.go</code> — 從 SKILL.md + config 動態組 AgentCard JSON</li>
+    <li><input type="checkbox"> <code>DownstreamConfig</code> 加 <code>A2AEndpoint</code> + <code>Protocol</code>（grpc / a2a）</li>
+    <li><input type="checkbox"> <code>main.go</code> 依 config 切換 GrpcDispatcher / A2ADispatcher</li>
+    <li><input type="checkbox"> Tasks 狀態管理（<code>tasks/get</code> / <code>tasks/cancel</code> / <code>tasks/subscribe</code>）</li>
+    <li><input type="checkbox"> 整合 Agent Registry：先查 registry 取 endpoint</li>
+  </ul>
+
+  <h3>P1-3：Orchestration 強化 <span class="badge b-done">完成</span></h3>
+  <ul>
+    <li><input type="checkbox" checked> Dispatcher 重試機制（<code>retry.go</code>：指數退避 + ±25% jitter，僅對 transient err；依 <code>defaults.max_retries / retry_backoff</code>）</li>
+    <li><input type="checkbox" checked> Trace propagation（<code>trace_meta.go</code>：gRPC metadata <code>x-trace-id</code> header；client/server interceptor + ctx helpers；未來可平滑換 otelgrpc）</li>
+    <li><input type="checkbox" checked> 推理佇列 / 限流（<code>worker_pool.go</code>：bounded channel + N workers；佇列滿回 <code>ack.Code=429</code>；panic-safe；<code>config.grpc.workers/queue_size</code>）</li>
+  </ul>
+
+  <h3>P1-4：LLM 進階功能</h3>
+  <ul>
+    <li><input type="checkbox"> Streaming response（<code>StreamingLLMClient</code> 介面，server-streaming gRPC）</li>
+    <li><input type="checkbox"> Cost tracking（<code>TokenUsage</code> × 單價 → PG metric 表）</li>
+  </ul>
+
+  <h3>P1-5：Guardrails</h3>
+  <ul>
+    <li><input type="checkbox"> 拒絕清單（黑名單關鍵字、危險 prompt patterns）</li>
+    <li><input type="checkbox"> 安全邊界（max input length、max tokens、工具白名單）</li>
+    <li><input type="checkbox"> 違規回應策略（拒絕模板）</li>
+  </ul>
+</section>
+
+<!-- ───────── P2 ───────── -->
+<section class="p2">
+  <h2><span class="badge b-p2">P2</span> 測試與品質</h2>
+
+  <h3>P2-1：Unit Tests <span class="badge b-done">完成</span></h3>
+  <ul>
+    <li><input type="checkbox" checked> <code>outbound_test.go</code> — ValidateOutbound 6 cases / ErrNoRoute / GrpcDispatcher.Send 成功（in-proc gRPC server）/ 連線快取 / dial 失敗 502</li>
+    <li><input type="checkbox" checked> <code>downstream_config_test.go</code> — ApplyDefaults cascade / Validate 6 cases / Find / LoadDownstreamConfig 含 bad-file 路徑</li>
+    <li><input type="checkbox" checked> <code>memory_service_test.go</code> — newID 格式+唯一 / 4 個 DTO JSON tag 契約 / *MemoryService 編譯期滿足 MemoryReader/Writer 介面（純函式覆蓋；完整 CRUD 屬 integration test → P2-2）</li>
+    <li><input type="checkbox" checked> <code>hybrid_test.go</code> — RRF Fusion 9 cases（dense-only / 重疊 / 單路失敗 / 雙路失敗 / threshold / topK 覆寫 / nil dense panic）— P0-2 已交付</li>
+    <li><input type="checkbox" checked> <code>builder_test.go</code> + <code>tokens_test.go</code> — 配額分配（persona override / config / builtin）/ token 預算（CJK-aware 截斷）— P0-1 已交付</li>
+    <li><input type="checkbox" checked> <code>redis_stream_test.go</code> — nopPublisher / nil-client fallback / disabled no-op / nil receiver / Close 後 no-op / Event JSON shape / EventType const 字串</li>
+    <li><input type="checkbox" checked> 額外：<code>retry_test.go</code> / <code>worker_pool_test.go</code> / <code>trace_meta_test.go</code> / <code>tool_test.go</code> / <code>llm_ollama_tools_test.go</code>（P1-3 / P1-1 隨工交付）</li>
+  </ul>
+  <div class="note">全套件 11 個 test files、~70 個 case，<code>go test ./...</code> 全綠。</div>
+
+  <h3>P2-2：Integration Tests</h3>
+  <ul>
+    <li><input type="checkbox" checked> <b>memory_service 真 CRUD（真 PG）</b> — <code>agents/app/services/memory_service_integration_test.go</code>，<code>//go:build integration</code> tag 隔離，自建 schema <code>agent_inttest</code>，8 cases 全 PASS（CRUD + Upsert 冪等 + List 排序/limit + JSONB 巢狀 round-trip）。<span class="muted">2026-06-02 完成</span></li>
+    <li><input type="checkbox"> gRPC Inbound → ContextBuilder → LLM → Outbound 全鏈路（mock LLM 自動化測試）<br><span class="muted">已用 <code>cmd/inbound-test</code> 對真本地 LLM live 跑通三輪（episodic 0→1→2），尚未轉成 bufconn + mock LLM 的 CI 自動化測試</span></li>
+    <li><input type="checkbox"> Ingest 全鏈路：<code>/api/ingest/references</code> → runner → <code>/api/upsert</code> → <code>embedding.upserted</code></li>
+    <li><input type="checkbox"> LLM provider 切換 e2e<br><span class="muted">已手動驗證 custom (llama.cpp 18080) 與 ollama (11434) 兩個 provider；尚未寫自動化切換測試</span></li>
+  </ul>
+
+  <h3>P2-3：Evals</h3>
+  <ul>
+    <li><input type="checkbox"> Latency benchmark（P50/P95/P99）</li>
+    <li><input type="checkbox"> LLM 回應品質（BLEU / 人工標記 / LLM-as-judge）</li>
+    <li><input type="checkbox"> Memory recall accuracy</li>
+    <li><input type="checkbox"> RAG retrieval relevance（NDCG / MRR）</li>
+    <li><input type="checkbox"> 建立 eval dataset</li>
+    <li><input type="checkbox"> CI 整合（GitHub Actions 門檻）</li>
+  </ul>
+</section>
+
+<!-- ───────── P3 ───────── -->
+<section class="p3">
+  <h2><span class="badge b-p3">P3</span> 接入方式與文件</h2>
+  <div class="note">
+    <b>2026-06-06 範圍調整</b>：原 P3-1「自建 Chat Web App / Slack / Discord bot」需求<b>取消</b>。
+    改為兩條既有接入路徑：
+    <ol style="margin:6px 0 0 18px;">
+      <li><b>agent_client</b>（Windows Fyne 桌面 client，見 <span class="badge b-p7">P7</span>）— 使用者端互動</li>
+      <li><b>API / A2A</b>（HTTP + gRPC + A2A JSON-RPC，見 <span class="badge b-p1">P1-2</span> / <span class="badge b-p4">P4-4</span>）— 程式或其他 agent 接入</li>
+    </ol>
+  </div>
+
+  <h3>P3-1：接入方式（取代原 UI 需求）</h3>
+  <ul>
+    <li><input type="checkbox" checked> <b>路徑 A — agent_client</b>：對話 / 上傳 / 工具回合制 → 見 P7-1 / P7-2（2026-06-05 完成）</li>
+    <li><input type="checkbox" checked> <b>路徑 B — REST API（同步對話）</b>：<code>POST /api/chat</code> 已上線（含 client 端工具回合制 <code>status=tool_calls</code> / <code>final</code>）+ <code>POST /api/ingest/upload</code> + <code>GET /api/ingest/jobs/:id</code>；schema 已註冊（hypgo <code>schema.Route</code>）</li>
+    <li><input type="checkbox" checked> <b>路徑 B — gRPC（內部 agent 間）</b>：<code>agent.v1.AgentService/Inbound</code> 已上線（<code>:9091</code>）；下游 dispatch 走 <code>GrpcDispatcher</code>（含重試 / trace propagation / 502/504）</li>
+    <li><input type="checkbox"> <b>路徑 B — A2A JSON-RPC（對外多 agent 互通）</b>：完整化見 <span class="badge b-p1">P1-2</span>（<code>A2ADispatcher</code> + <code>AgentCard</code> 動態組裝 + registry 整合）</li>
+  </ul>
+
+  <h3>P3-2：API 文件（保留）</h3>
+  <ul>
+    <li><input type="checkbox"> OpenAPI / Swagger 文件（自動從 hypgo <code>schema.Route</code> 產出，給 API 接入方參考）</li>
+    <li><input type="checkbox"> A2A AgentCard JSON 範例（給其他 agent 平台對接，配合 P1-2）</li>
+    <li><input type="checkbox"> agent_client 工具登錄使用者向 README 範例（<code>tools_test.go</code> 已涵蓋格式）</li>
+  </ul>
+</section>
+
+<!-- ───────── P4 ───────── -->
+<section class="p4">
+  <h2><span class="badge b-p4">P4</span> 架構 v2 拆分</h2>
+  <div class="note">原 <code>docs/MIGRATION.md</code> 已於 2026-05-17 刪除；以下子節為剩餘工項，搭配對照表獨立可執行。</div>
+
+  <h3 style="margin-top:6px">📐 與 SVG 原設計圖對照（2026-05-17）</h3>
+  <div class="note">
+    參照 <code>docs/optimized_multi_agent_architecture_v2.svg</code>（v2 plan：Gateway + 6 個 shared microservices + Event Bus）。
+    現況：實際運行 <b>5 個</b> microservice，已對齊大方向約 50%；剩 P4 系列的工項對應下方差距表。
+  </div>
+
+  <table style="width:100%; border-collapse:collapse; font-size:0.92em; margin:8px 0 14px;">
+    <thead>
+      <tr style="background:#ecf0f1; text-align:left;">
+        <th style="padding:6px 8px; border:1px solid #bdc3c7;">SVG 規劃</th>
+        <th style="padding:6px 8px; border:1px solid #bdc3c7;">port / 通訊</th>
+        <th style="padding:6px 8px; border:1px solid #bdc3c7;">實裝狀態</th>
+        <th style="padding:6px 8px; border:1px solid #bdc3c7;">對應 TODO</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">★ agent_memory</td>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">gRPC :50052</td>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">✅ 已拆出（<code>agent_memory/</code>）且已補 gRPC（實際埠 :8510，非 SVG 規劃的 :50052）；REST :8501 仍並存</td>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">P4-2（2026-07-03 完成）</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">☆ LLM Gateway</td>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">gRPC :50053</td>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">❌ 未拆，仍在 <code>agents/app/services/llm_*.go</code></td>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">P4-3</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">☆ Embedding Svc</td>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">gRPC :50054</td>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">🟡 在 <code>agent_embedding/</code> 但走 HTTP :8502</td>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">P4-1</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">☆ Vector Search</td>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">gRPC :50055</td>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">🟡 與 Embedding <b>合併</b>在 <code>agent_embedding</code> 同 binary</td>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">P4-1（拆 binary）</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">※ Ingest Service</td>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">gRPC :50056</td>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">❌ 未拆，仍在 <code>agents/app/services/ingest_service.go</code></td>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">P4-3</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">※ Skill Store</td>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">gRPC :50057</td>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">❌ 未拆，仍在 <code>agents/app/services/skill_loader.go</code> + <code>skill_selector.go</code></td>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">P4-3</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">Gateway Layer（A2A + Router + TLS）</td>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">:443 + :8080</td>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">🟡 <code>agent_gateway/</code> 已提供 A2A :8090；完整 Ingress / TLS / RateLimit 待補</td>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">P4-4</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">⚡ Redis Stream</td>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">:6379</td>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">✅ 已實裝（agents + agent_embedding 用 <code>eventbus</code> 套件）</td>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">—</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">⚡ Kafka</td>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">:9092</td>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">❌ 未部署（按需，Redis Stream 已足）</td>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">P4-5</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">Storage（PG / Redis / Cassandra / TEI）</td>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">—</td>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">✅ 一致（「TEI」實際走 Ollama）</td>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">—</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">Internal Agents A/B/C</td>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">gRPC :50051</td>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">✅ <code>agents</code> 單一 binary 可承擔多 agent_id</td>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">—</td>
+      </tr>
+      <tr style="background:#fff8e1;">
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">➕ agent_registry（SVG 未列）</td>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">:8500</td>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">✅ 額外實裝（service discovery，獨立 repo <code>D:/GoProjects/agent_registry</code>）</td>
+        <td style="padding:6px 8px; border:1px solid #bdc3c7;">—</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    <b>三大偏離點</b>：（1）內網通訊規劃 gRPC，現多為 HTTP → P4-1；（2）LLM Gateway / Ingest / Skill Store 未拆 → P4-2/P4-3；（3）Embedding 與 Vector Search 合併在同 binary → P4-1 拆 <code>cmd/embedding/</code> + <code>cmd/vector-search/</code>。
+    <b>合理偏離</b>：HTTP 先行→gRPC 漸進切換符合雙跑策略（原 docs/MIGRATION.md 紀錄已併入本表）；agent_registry 補上 SVG 漏列的 discovery。
+  </div>
+
+  <h3>P4-1：Phase 2 — Embedding / Vector Search 拆分（~2 days）</h3>
+  <ul>
+    <li><input type="checkbox"> <code>embedding.proto</code>：<code>Embed / EmbedBatch</code></li>
+    <li><input type="checkbox"> <code>vector_search.proto</code>：<code>Upsert / Search / Delete</code></li>
+    <li><input type="checkbox"> 加 gRPC server（共用 binary，:50054 + :50055）</li>
+    <li><input type="checkbox"> agents 加 gRPC client（<code>embedding.mode: grpc</code>）</li>
+    <li><input type="checkbox"> 雙跑驗證 → 切換 → 移除 HTTP</li>
+    <li><input type="checkbox"> 拆獨立 binary（<code>cmd/embedding/</code>、<code>cmd/vector-search/</code>）</li>
+  </ul>
+
+  <h3>P4-2：Phase 3 — agent_memory 補齊 gRPC <span class="badge b-done">2026-07-03 大致完成</span></h3>
+  <ul>
+    <li><input type="checkbox" checked> <code>agent_memory/app/controllers/memory_grpc.go</code> — gRPC server 上線（實際埠 :8510；REST :8501 並存）</li>
+    <li><input type="checkbox" checked> <code>agents/app/services/memory_grpc_client.go</code> 實作 gRPC client</li>
+    <li><input type="checkbox" checked> agents 把 <code>MemoryService</code> 換成走 gRPC client（<code>config.memory.grpc_addr</code> 空 → fallback 直連 DB，過渡期相容）</li>
+    <li><input type="checkbox"> <b>殘留</b>：<code>agents/app/controllers/memory.go</code>（<code>/api/memory/*</code> REST 代理）仍直連 DB，未轉 gRPC</li>
+    <li><input type="checkbox"> 訂閱 <code>ingest.completed</code> → 自動寫 episodic（尚未做）</li>
+  </ul>
+
+  <h3>P4-3：Phase 4 — Skill Store / LLM Gateway / Ingest 拆出（~7 days）</h3>
+  <ul>
+    <li><input type="checkbox"> Skill Store（:50057）：抽 <code>skill_loader / skill_selector</code>；訂閱 <code>embedding.upserted</code> reload</li>
+    <li><input type="checkbox"> LLM Gateway（:50053）：抽 <code>llm_*.go</code>；<code>Chat / Stream</code>；共享 Redis session</li>
+    <li><input type="checkbox"> Ingest Service（:50056）：抽 ingest；Kafka consumer；發 <code>ingest.completed</code></li>
+  </ul>
+
+  <h3>P4-4：Phase 5 — API Gateway（~5 days，最後做）</h3>
+  <ul>
+    <li><input type="checkbox"> 自寫 Go Gateway（A2A JSON-RPC ↔ gRPC 翻譯）</li>
+    <li><input type="checkbox"> 服務發現（依 agent_id 路由）</li>
+    <li><input type="checkbox"> Rate Limit + Auth（API key / JWT）</li>
+    <li><input type="checkbox"> TLS 終端（:443 HTTPS，內部 :50051 mTLS）</li>
+  </ul>
+
+  <h3>P4-5：Phase 6 — Kafka（按需）</h3>
+  <div class="note">當下 Redis Stream 已足，列為未來增強（觸發條件：>100K events/sec 或需 Exactly-Once）</div>
+</section>
+
+<!-- ───────── P5 ───────── -->
+<section class="p5">
+  <h2><span class="badge b-p5">P5</span> 雜項與重構</h2>
+
+  <h3>P5-1：可選優化</h3>
+  <ul>
+    <li><input type="checkbox"> <code>IngestService</code> 改 channel-based worker pool</li>
+    <li><input type="checkbox"> <code>SkillProvider</code> 介面 + <code>RemoteSkillLoader</code>（為 Skill Store 鋪路）</li>
+    <li><input type="checkbox"> <code>memory_client.go</code>（為 agent_memory 鋪路）</li>
+  </ul>
+
+  <h3>P5-2：K8s 部署落地</h3>
+  <ul>
+    <li><input type="checkbox"> 把 <code>setup.html</code> 中的 inline manifests 展開為 <code>k8s/*.yaml</code> 真實檔（ns / secret / configmap × 4 / deployment × 4 / svc × 4 + NodePort）</li>
+    <li><input type="checkbox"> 共用 <code>Dockerfile</code> + <code>scripts/build-images.sh</code></li>
+    <li><input type="checkbox"> 多節點映像分發（建議 in-cluster <code>registry:2</code>）</li>
+    <li><input type="checkbox"> 第一次部署到 K8s master 192.168.50.202 並通過完整鏈路驗證</li>
+  </ul>
+</section>
+
+<!-- ───────── P6 Memory v2 ───────── -->
+<section class="p6">
+  <h2><span class="badge b-p6">P6</span> Agent Memory v2（生產級分層記憶）</h2>
+  <p class="muted" style="margin-top:-6px;">來源：<code>docs/agent_memory.svg</code>「生產級 Agent Memory 系統架構」四大區塊。對照後三大區塊有缺。</p>
+  <div class="note"><b>注意</b>：與根目錄 CLAUDE.md 的 6 類記憶分類（personal/procedural/episodic/semantic/shared/short-term）不是同一件事——後者 6 類已於 2026-07-03 全數接進推理流程，但本節針對的是 SVG 的「摘要品質 / 滑動窗口 / Policy / 雙時態 / 自動固化」，這些仍大多未做，下表狀態未變。</div>
+
+  <h3>差距分析（2026-06-02）</h3>
+  <table style="width:100%;border-collapse:collapse;font-size:0.92em;">
+    <thead>
+      <tr style="background:#ecf0f1;">
+        <th style="border:1px solid #d5dde0;padding:6px 8px;">SVG 區塊</th>
+        <th style="border:1px solid #d5dde0;padding:6px 8px;">圖中項目</th>
+        <th style="border:1px solid #d5dde0;padding:6px 8px;">對應現況</th>
+        <th style="border:1px solid #d5dde0;padding:6px 8px;text-align:center;">狀態</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td rowspan="4" style="border:1px solid #d5dde0;padding:6px 8px;"><b>一、分層記憶</b></td>
+          <td style="border:1px solid #d5dde0;padding:6px 8px;">1. 會話原數據 (Metadata)</td>
+          <td style="border:1px solid #d5dde0;padding:6px 8px;"><code>InboundReq.Metadata</code> + trace_id；不進 long-term</td>
+          <td style="border:1px solid #d5dde0;padding:6px 8px;text-align:center;color:#27ae60;font-weight:bold;">✅</td></tr>
+      <tr><td style="border:1px solid #d5dde0;padding:6px 8px;">2. 結構化檔案卡 (JSON)</td>
+          <td style="border:1px solid #d5dde0;padding:6px 8px;"><code>personal_memory</code> + <code>tool_memory</code> + ON CONFLICT</td>
+          <td style="border:1px solid #d5dde0;padding:6px 8px;text-align:center;color:#27ae60;font-weight:bold;">✅</td></tr>
+      <tr><td style="border:1px solid #d5dde0;padding:6px 8px;">3. 近期對話摘要 (Summary)</td>
+          <td style="border:1px solid #d5dde0;padding:6px 8px;">欄位有，但只填 <code>truncate(user_msg, 200)</code>，非真摘要</td>
+          <td style="border:1px solid #d5dde0;padding:6px 8px;text-align:center;color:#e67e22;font-weight:bold;">🟡</td></tr>
+      <tr><td style="border:1px solid #d5dde0;padding:6px 8px;">4. 滑動窗口 (Sliding Window)</td>
+          <td style="border:1px solid #d5dde0;padding:6px 8px;">無；ContextBuilder 取 episodic top-2 <code>occurred_at desc</code></td>
+          <td style="border:1px solid #d5dde0;padding:6px 8px;text-align:center;color:#e74c3c;font-weight:bold;">❌</td></tr>
+
+      <tr><td rowspan="5" style="border:1px solid #d5dde0;padding:6px 8px;"><b>二、三、大模型 + 控制</b></td>
+          <td style="border:1px solid #d5dde0;padding:6px 8px;">大模型（直覺系統）</td>
+          <td style="border:1px solid #d5dde0;padding:6px 8px;"><code>services.LLMClient</code></td>
+          <td style="border:1px solid #d5dde0;padding:6px 8px;text-align:center;color:#27ae60;font-weight:bold;">✅</td></tr>
+      <tr><td style="border:1px solid #d5dde0;padding:6px 8px;">慢思考迴路（暫停 / 調用工具）</td>
+          <td style="border:1px solid #d5dde0;padding:6px 8px;">Tool Calling + <code>RunToolLoop</code>（P1-1）</td>
+          <td style="border:1px solid #d5dde0;padding:6px 8px;text-align:center;color:#27ae60;font-weight:bold;">✅</td></tr>
+      <tr><td style="border:1px solid #d5dde0;padding:6px 8px;">記憶大腦 Policy（讀 / 寫 / 遺忘）</td>
+          <td style="border:1px solid #d5dde0;padding:6px 8px;"><b>無</b>；目前每輪固定全查全寫</td>
+          <td style="border:1px solid #d5dde0;padding:6px 8px;text-align:center;color:#e74c3c;font-weight:bold;">❌</td></tr>
+      <tr><td style="border:1px solid #d5dde0;padding:6px 8px;">原始賬本 (Ledger，只追加)</td>
+          <td style="border:1px solid #d5dde0;padding:6px 8px;">episodic 是 append-only；其他三類仍可 update</td>
+          <td style="border:1px solid #d5dde0;padding:6px 8px;text-align:center;color:#e67e22;font-weight:bold;">🟡</td></tr>
+      <tr><td style="border:1px solid #d5dde0;padding:6px 8px;">派生視圖 (Views，轉模型可讀)</td>
+          <td style="border:1px solid #d5dde0;padding:6px 8px;"><code>persona.ToInstruction()</code> + <code>ContextBuilder</code></td>
+          <td style="border:1px solid #d5dde0;padding:6px 8px;text-align:center;color:#27ae60;font-weight:bold;">✅</td></tr>
+
+      <tr><td rowspan="2" style="border:1px solid #d5dde0;padding:6px 8px;"><b>四、防雷機制</b></td>
+          <td style="border:1px solid #d5dde0;padding:6px 8px;">雙時態（valid_from / system_at）</td>
+          <td style="border:1px solid #d5dde0;padding:6px 8px;">只有 <code>occurred_at</code> / <code>created_at</code>；無「現實生效時間」</td>
+          <td style="border:1px solid #d5dde0;padding:6px 8px;text-align:center;color:#e74c3c;font-weight:bold;">❌</td></tr>
+      <tr><td style="border:1px solid #d5dde0;padding:6px 8px;">程序性記憶（成功軌跡 → Skill）</td>
+          <td style="border:1px solid #d5dde0;padding:6px 8px;"><code>procedural_memory</code> 表存在但僅從 SKILL.md 解析；無自動壓縮</td>
+          <td style="border:1px solid #d5dde0;padding:6px 8px;text-align:center;color:#e67e22;font-weight:bold;">🟡</td></tr>
+    </tbody>
+  </table>
+  <p class="muted">小計：✅ 4 / 🟡 3 / ❌ 4。屬 memory 層次往上一級的整體升級，跨 agents core + agent_memory 兩服務。</p>
+
+  <h3>P6-1：對話摘要升級為真摘要（~2 天）</h3>
+  <ul>
+    <li><input type="checkbox"> 新增 <code>services.SummaryService.Summarize(ctx, turns)</code>，內部呼叫 LLM（低溫度 + 「壓縮為 ≤200 token」prompt）</li>
+    <li><input type="checkbox"> <code>agent_grpc.writeEpisodic()</code>：turns ≥ N 改呼叫 SummaryService；否則維持原 truncate</li>
+    <li><input type="checkbox"> 加 <code>config.context.summary_min_turns</code> / <code>summary_max_tokens</code></li>
+    <li><input type="checkbox"> <code>summary_service_test.go</code>（mock LLM）</li>
+  </ul>
+
+  <h3>P6-2：滑動窗口（Sliding Window）（~1 天）</h3>
+  <ul>
+    <li><input type="checkbox"> <code>MemoryService.PruneEpisodic(ctx, agentID, keepLast)</code></li>
+    <li><input type="checkbox"> 寫入時觸發（每次 writeEpisodic 後若超量自動裁切）</li>
+    <li><input type="checkbox"> <code>config.memory.sliding_window</code>（每 agent 保留筆數）</li>
+  </ul>
+
+  <h3>P6-3：記憶大腦 Policy（讀 / 寫 / 遺忘）（~3 天）</h3>
+  <ul>
+    <li><input type="checkbox"> <code>internal/agent/policy/policy.go</code>：<code>ShouldQuery</code> / <code>ShouldWrite</code> / <code>ShouldForget</code></li>
+    <li><input type="checkbox"> rule-based 預設策略（query < 5 字不查 RAG；assistant < 10 字不寫；訪問 0 且 &gt;30 天遺忘）</li>
+    <li><input type="checkbox"> LLM-based 進階策略（小模型判斷價值）— 第二階段</li>
+    <li><input type="checkbox"> <code>agent_grpc.process()</code> 與 <code>writeEpisodic()</code> 注入 Policy 檢查</li>
+  </ul>
+
+  <h3>P6-4：雙時態機制（Bi-temporal）（~3 天）</h3>
+  <ul>
+    <li><input type="checkbox"> 給 <code>episodic_memory</code> / <code>personal_memory</code> 加 <code>valid_from</code> / <code>valid_to</code> 欄位</li>
+    <li><input type="checkbox"> <code>MemoryService.GetAsOf(agentID, asOfRealTime)</code> 時間切片查詢</li>
+    <li><input type="checkbox"> <code>UpdatePersonal</code> 新增模式：不覆蓋，改插新 row 並把舊 row <code>valid_to = now()</code></li>
+    <li><input type="checkbox"> migration <code>005_add_bitemporal.up.sql</code></li>
+    <li><input type="checkbox"> 時間切片 round-trip 整合測試</li>
+  </ul>
+
+  <h3>P6-5：程序性記憶自動固化（~3 天）</h3>
+  <ul>
+    <li><input type="checkbox"> <code>internal/agent/skill_distill/distiller.go</code>：發現重複成功的 query→tool_call 序列，用 LLM 壓縮為 procedural template</li>
+    <li><input type="checkbox"> 寫入 <code>procedural_memory</code> 新 source: <code>auto_distilled</code></li>
+    <li><input type="checkbox"> 訂閱 <code>episodic.recorded</code> 事件批次分析（背景 worker）</li>
+    <li><input type="checkbox"> <code>config.skill_distill.{min_occurrences, similarity_threshold, enabled}</code></li>
+    <li><input type="checkbox"> 與 P4-3 Skill Store 對接時可演化為「自動 reload skill」</li>
+  </ul>
+
+  <h3>P6-6：Ledger 強化（Append-only contract）（~1 天）</h3>
+  <ul>
+    <li><input type="checkbox"> <code>PersonalMemory</code> / <code>ProceduralMemory</code> 加 <code>version</code> 欄位（每次 update bump）</li>
+    <li><input type="checkbox"> <code>MemoryService.History(ctx, id)</code> 取所有版本（與 P6-4 並行）</li>
+    <li><input type="checkbox"> 任何 mutation 寫一筆 audit event 到 Redis Stream <code>memory.mutated</code></li>
+  </ul>
+
+  <h3>P6 建議實作順序</h3>
+  <div class="order">P6-1 (Summary)  ← 最便宜，立刻看到 episodic 內容變漂亮
+   ↓
+P6-2 (Window)   ← 防 memory 爆量；單純背景任務
+   ↓
+P6-3 (Policy)   ← rule-based 先做；之後再升級 LLM-based
+   ↓
+P6-4 (雙時態)   ← 動表結構，建議和 P6-6 一起做
+   ↓
+P6-5 (固化)     ← 最有 wow effect 但最重；放最後</div>
+</section>
+
+<!-- ───────── P7 Agent Client ───────── -->
+<section class="p7">
+  <h2><span class="badge b-p7">P7</span> Agent Client（Windows Fyne 桌面 client）</h2>
+  <p class="muted" style="margin-top:-6px;">
+    位置：<code>D:\GoProjects\single_agent\agent_client\</code>（Go + Fyne，需 CGO + MinGW-w64）。
+    對接後端 <code>agents</code> 服務：<code>POST /api/chat</code>（同步對話 + client 端工具回合制）、<code>POST /api/ingest/upload</code>、<code>GET /api/ingest/jobs/:id</code>。
+    設定持久化：<code>%APPDATA%\agent_client\config.json</code>。
+  </p>
+
+  <h3>P7-1：基礎四分頁 UI <span class="badge b-done">完成</span> <span class="muted">2026-06-05</span></h3>
+  <ul>
+    <li><input type="checkbox" checked> <b>對話分頁</b> — 與 agent 同步對話；agent 要求時於本機執行已登錄工具（回合制）<code>internal/ui/chat.go</code> + <code>internal/chat/engine.go</code></li>
+    <li><input type="checkbox" checked> <b>上傳分頁</b> — 選 PDF / 圖片 / 文字 → 上傳攝取 → 輪詢進度 <code>internal/ui/upload.go</code></li>
+    <li><input type="checkbox" checked> <b>工具分頁</b> — 登錄 / 編輯 / 刪除本地可執行工具（command + argv 樣板 + JSON Schema）<code>internal/ui/tools.go</code> + <code>internal/tools/tools.go</code>（含 <code>tools_test.go</code>）</li>
+    <li><input type="checkbox" checked> <b>設定分頁</b> — Agent Base URL / Agent ID / 自簽 TLS <code>internal/ui/settings.go</code></li>
+    <li><input type="checkbox" checked> 設定持久化 <code>internal/config/config.go</code></li>
+    <li><input type="checkbox" checked> HTTP client（含自簽 TLS 跳過）<code>internal/api/client.go</code></li>
+    <li><input type="checkbox" checked> CGO + MinGW-w64 UCRT gcc 15 建置驗證（<code>go build -o agent_client.exe .</code> 成功）</li>
+  </ul>
+
+  <h3>P7-2：本地工具執行（回合制）<span class="badge b-done">完成</span> <span class="muted">2026-06-05</span></h3>
+  <ul>
+    <li><input type="checkbox" checked> 工具登錄時送 manifest（name/description/schema）→ 對話帶 <code>client_tools[]</code></li>
+    <li><input type="checkbox" checked> 後端回 <code>status=tool_calls</code> → client 本機 <code>exec.Command</code>（不經 shell，避免注入）→ 回送 <code>tool_results</code> → 接續到 <code>final</code></li>
+    <li><input type="checkbox" checked> 安全邊界：allowlist + argv 陣列代入 + 可選「執行前確認」彈窗 + 硬性逾時（預設 30s）</li>
+  </ul>
+
+  <h3>P7-3：UX / 觀測強化</h3>
+  <ul>
+    <li><input type="checkbox"> 對話分頁顯示 token 用量 / <code>finish_reason</code> / 工具迴圈次數（從 <code>ChatTurnResponse.Usage</code> 取）</li>
+    <li><input type="checkbox"> 對話歷史保留與「重置」按鈕（目前重啟即丟）</li>
+    <li><input type="checkbox"> 上傳進度條（目前只輪詢百分比）</li>
+    <li><input type="checkbox"> 工具執行 log tab（stdout / stderr 即時跟對話顯示）</li>
+    <li><input type="checkbox"> 多 agent 切換（記住多組 Base URL + Agent ID，下拉切換）</li>
+    <li><input type="checkbox"> 串流回應（待後端 P1-4 streaming 完成後接 SSE / gRPC server-stream）</li>
+  </ul>
+
+  <h3>P7-4：跨平台 / 打包</h3>
+  <ul>
+    <li><input type="checkbox"> macOS / Linux 建置驗證（Fyne 支援；目前只 Windows）</li>
+    <li><input type="checkbox"> Windows 簽章 / MSI 打包（<code>fyne package</code> 或 WiX）</li>
+    <li><input type="checkbox"> Auto-update 機制（檢查 GitHub release / 自架 update server）</li>
+  </ul>
+
+  <h3>P7-5：設定 / TLS 強化</h3>
+  <ul>
+    <li><input type="checkbox"> 改用 mTLS（配合 P4-4 Gateway TLS 終端）</li>
+    <li><input type="checkbox"> Trust on first use：對自簽憑證做指紋 pin</li>
+    <li><input type="checkbox"> 切多環境（dev / staging / prod profile，一鍵切換）</li>
+  </ul>
+
+  <h3>P7-6：內建 Coding Agent（讀檔/搜尋/編輯 + diff 審核）<span class="badge b-done">完成</span> <span class="muted">2026-07-02，尚未 commit</span></h3>
+  <p class="muted" style="margin-top:-6px;">與 P7-2 的「使用者登錄工具」不同：這組是 <b>client 內建</b>、比照 Claude Code 的 Read/Grep/Edit/Write 語意。</p>
+  <ul>
+    <li><input type="checkbox" checked> 5 個內建工具：<code>code_list_files / code_search / code_read_file / code_edit_file / code_write_file</code> — <code>app/services/code_service.go</code>（+ <code>code_service_test.go</code> 18 cases）</li>
+    <li><input type="checkbox" checked> 寫入前強制 diff 審核（<code>difflib.UnifiedDiff</code> + <code>dialog.NewCustomConfirm</code>）— <code>app/views/diff_dialog.go</code></li>
+    <li><input type="checkbox" checked> 路徑安全：<code>resolveInWorkspace</code> 用 <code>filepath.Rel</code> 擋 <code>..</code> 逃逸，逃逸時明確回錯而非靜默鉗制</li>
+    <li><input type="checkbox" checked> 二進位/非 UTF-8 內容一律拒讀拒寫</li>
+    <li><input type="checkbox" checked> 雙重開關：<code>Config.WorkspaceRoot</code> 已設 <b>且</b> 對話頁 Normal/Code 模式切到 Code，兩者缺一回空 manifest</li>
+    <li><input type="checkbox" checked> 對話頁模式切換按鈕（<code>MediumImportance</code>/<code>WarningImportance</code> 視覺區分；未設工作目錄就切 Code 會提示先去設定頁）</li>
+  </ul>
+  <div class="note">
+    <b>已知限制</b>（README 已誠實記載，非待辦）：本地小模型（<code>gemma4:e4b</code>）多檔案/複雜重構可靠度遠不如雲端大模型；後端 <code>tools.max_iterations</code>（預設 8）可能不夠跑完複雜任務；只支援單一文字檔逐次編輯，不支援真正多檔案 diff 規劃。
+    <b>尚待</b>：目前 8 個變更檔案 + 3 新檔仍是<b>未 commit 狀態</b>。
+  </div>
+</section>
+
+<!-- ───────── 2026-06-02 基礎建設完成 ───────── -->
+<section>
+  <h2><span class="badge" style="background:#2a1f3a;color:#c5a8ff;">✓</span> 2026-06-02 基礎建設完成</h2>
+  <ul>
+    <li><input type="checkbox" checked> <b>hypgo v0.8.5 → v0.8.6</b> 全服務升級</li>
+    <li><input type="checkbox" checked> <b>hidb 統一</b>：PG / Redis / Cassandra 全部改走 <code>hypgo/pkg/hidb</code>。涉及 <code>agents</code> + <code>agent_embedding</code> 內 9 個檔；<code>agent_memory</code> / <code>agent_gateway</code> 早已遵循。公開 API 不變（內部抽換），go build / go test / 整合測試全綠</li>
+    <li><input type="checkbox" checked> <b>P2-2 memory_service 真 CRUD</b>（見上方 P2-2 第一項）</li>
+    <li><input type="checkbox" checked> <b>本地 LLM 串接驗證</b>：<code>config/llm.local.yaml</code> 同時支援
+      <ul>
+        <li>llama.cpp HTTP server（OpenAI-compat <code>/v1/chat/completions</code>，<code>provider: custom</code>）</li>
+        <li>Ollama（原生 <code>/api/chat</code>，<code>provider: ollama</code>）</li>
+      </ul>
+      實測 Qwen3.6-35B (5s) 與 Nemotron-30B (1.5s) 兩個模型都跑通 SKILL.md → persona → Chat。
+    </li>
+    <li><input type="checkbox" checked> <b>gRPC 完整鏈路 live test</b>：<code>cmd/inbound-test/main.go</code> 對本機 :9091 連發 3 次，agent log 顯示
+      <code>episodic recorded</code> 後下一輪 ContextBuilder 自動撈回，count 0→1→2 證實封閉學習迴圈正確運作</li>
+    <li><input type="checkbox" checked> <b>K8s + containerd 部署文件</b>：<code>setup.html</code> 含 4 張 SVG 圖（topology / port 分配 / build pipeline / 部署順序）、cross-compile + nerdctl build 指令、ConfigMap/Deployment/Service 範例 YAML；LLM 改為 cluster 內 Ollama (<code>ollama:11434</code>)</li>
+  </ul>
+  <div class="note">尚未自動化的部分（gRPC chain mock-LLM test、provider 切換 e2e）已在 P2-2 章節保留未勾選，等下一波處理。</div>
+</section>
+
+<!-- ───────── 實作順序 ───────── -->
+<section>
+  <h2>下一步建議（依「投資 / 報酬 / 阻擋什麼」排序，2026-07-03 重新排序）</h2>
+
+  <table style="width:100%;border-collapse:collapse;margin:14px 0;">
+    <thead>
+      <tr style="background:#222a39;color:#7cc4ff;">
+        <th style="border:1px solid #364257;padding:8px;text-align:center;">優先</th>
+        <th style="border:1px solid #364257;padding:8px;">項目</th>
+        <th style="border:1px solid #364257;padding:8px;">為何先做</th>
+        <th style="border:1px solid #364257;padding:8px;text-align:center;">估時</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="border:1px solid #364257;padding:8px;text-align:center;">★★★</td>
+        <td style="border:1px solid #364257;padding:8px;"><b>P7-6 收尾：commit agent_client Coding Agent 變更</b></td>
+        <td style="border:1px solid #364257;padding:8px;">功能已完成、有測試（18 cases），但「未 commit」代表隨時可能被覆蓋或遺失；成本近乎零的收尾動作。</td>
+        <td style="border:1px solid #364257;padding:8px;text-align:center;">&lt;1 天</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #364257;padding:8px;text-align:center;">★★★</td>
+        <td style="border:1px solid #364257;padding:8px;"><b>P1-5 Guardrails</b></td>
+        <td style="border:1px solid #364257;padding:8px;">agent_client 現在能讓本地 LLM <b>直接寫入使用者磁碟檔案</b>（雖有 diff 審核閘門），加上 K8s 對外暴露在即，安全邊界急迫性比先前評估更高。</td>
+        <td style="border:1px solid #364257;padding:8px;text-align:center;">~2 天</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #364257;padding:8px;text-align:center;">★★★</td>
+        <td style="border:1px solid #364257;padding:8px;"><b>P2-2 第二項：gRPC 全鏈路 mock-LLM 自動化測試</b></td>
+        <td style="border:1px solid #364257;padding:8px;">live 測過了，且 memory 已改真 gRPC（P4-2 完成），趁脈絡還在把測試補齊，比之後重做便宜得多。</td>
+        <td style="border:1px solid #364257;padding:8px;text-align:center;">~1 天</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #364257;padding:8px;text-align:center;">★★</td>
+        <td style="border:1px solid #364257;padding:8px;"><b><code>agents/app/controllers/memory.go</code> 收斂為 gRPC</b><br>P4-2 唯一殘留</td>
+        <td style="border:1px solid #364257;padding:8px;">避免同一份記憶資料出現兩條不同步的存取路徑（gRPC path 走 agent_memory，REST 代理繞過它直連 DB）。</td>
+        <td style="border:1px solid #364257;padding:8px;text-align:center;">~1 天</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #364257;padding:8px;text-align:center;">★★</td>
+        <td style="border:1px solid #364257;padding:8px;"><b>P5-2 K8s 真正部署落地</b></td>
+        <td style="border:1px solid #364257;padding:8px;">單機完整鏈路（含新 TLS + gRPC memory）已驗證，趁餘溫把「最後一哩」走完。</td>
+        <td style="border:1px solid #364257;padding:8px;text-align:center;">~2 天</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #364257;padding:8px;text-align:center;">★★</td>
+        <td style="border:1px solid #364257;padding:8px;"><b>P1-2 A2A 完整化</b></td>
+        <td style="border:1px solid #364257;padding:8px;">K8s 多 agent 場景下，agent-gateway 必須能對下游做 A2A（不只 gRPC）。配合 registry 才能真正多 agent 化。</td>
+        <td style="border:1px solid #364257;padding:8px;text-align:center;">~3 天</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #364257;padding:8px;text-align:center;">★</td>
+        <td style="border:1px solid #364257;padding:8px;"><b>P4-1 Embedding gRPC 化</b></td>
+        <td style="border:1px solid #364257;padding:8px;">架構 v2 第一塊里程碑；HTTP→gRPC 雙跑時間長但風險低。可拖到 P1-5 / P1-2 完成後再啟動。</td>
+        <td style="border:1px solid #364257;padding:8px;text-align:center;">~2 天</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #364257;padding:8px;text-align:center;">★★</td>
+        <td style="border:1px solid #364257;padding:8px;"><b>P6-1 + P6-2 Memory v2 第一波</b><br>真摘要 + 滑動窗口</td>
+        <td style="border:1px solid #364257;padding:8px;">來自 <code>docs/agent_memory.svg</code> 規劃；注意這與已完成的「6 類記憶」是不同層次（見 P6 章節說明）。摘要讓 episodic 內容有用，sliding window 防爆量。</td>
+        <td style="border:1px solid #364257;padding:8px;text-align:center;">~3 天</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #364257;padding:8px;text-align:center;">★</td>
+        <td style="border:1px solid #364257;padding:8px;"><b>P6-3 ~ P6-5 Memory v2 後段</b><br>Policy / 雙時態 / 自動固化</td>
+        <td style="border:1px solid #364257;padding:8px;">較重投資，建議上述項目都告一段落後再啟動。可顯著拉開「toy agent」與「production agent」差距。</td>
+        <td style="border:1px solid #364257;padding:8px;text-align:center;">~9 天</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #364257;padding:8px;text-align:center;color:#9aa3b2;">○</td>
+        <td style="border:1px solid #364257;padding:8px;color:#9aa3b2;">P1-4 Streaming/Cost、P1-X 相似度排序、P7-3/P7-4/P7-5、P3-2 文件</td>
+        <td style="border:1px solid #364257;padding:8px;color:#9aa3b2;">nice-to-have，等核心進 prod 後再排。</td>
+        <td style="border:1px solid #364257;padding:8px;text-align:center;color:#9aa3b2;">—</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>推薦路徑</h3>
+  <div class="order">立即：  commit agent_client 變更 + P1-5 Guardrails  ← 收尾未落地的工作、補上安全邊界
+       ↓
+本週：  P2-2 第二項（gRPC chain test）+ memory.go 收斂 gRPC 並行
+       ↓
+下週：  P5-2 K8s 部署落地         ← 把 setup.html 兌現（現在鏈路含 TLS + gRPC memory）
+       ↓
+月底：  P1-2 A2A 完整化 → 對 K8s 多 agent 真正有意義
+       ↓
+中期：  P4-1 → P4-3（架構 v2 漸進拆分，P4-2 已完成）
+       ↓
+長期：  P6 Memory v2 深化 + P4-4 Gateway 完整化 → 對外曝光</div>
+</section>
+
+</body>
+</html>

@@ -1,0 +1,324 @@
+# HypGo API Configuration
+
+server:
+  protocol: http2
+  addr: "192.168.50.104:18080"
+  read_timeout: 30s
+  write_timeout: 30s
+  idle_timeout: 120      # hypgo ServerConfig.IdleTimeout 為秒數 int，不接受 "120s"
+  keep_alive: 30s
+  max_handlers: 1000
+  max_concurrent_streams: 100
+  max_read_frame_size: 1048576
+  enable_graceful_restart: true
+  tls:
+    enabled: true
+    cert_file: "certs/server.crt"
+    key_file: "certs/server.key"
+    auto_cert: false
+    domains: []
+
+database:
+  driver: postgres        # postgres, mysql, sqlite
+  dsn: "postgres://mcpadm:Mephisto80@192.168.50.201:5433/mcp?sslmode=disable"
+  max_idle_conns: 10
+  max_open_conns: 100
+  conn_max_lifetime: 1h
+  log_level: warning      # silent, error, warning, info
+  auto_migrate: true
+
+# ----- Cassandra 5.0 (dense 向量儲存；BGE-M3 1024 維 + SAI ANN) -----
+cassandra:
+  hosts:
+    - "192.168.50.201:9042"
+  keyspace: "mcp"
+  username: "mcpadm"
+  password: "qwert77142"
+  consistency: "LOCAL_ONE"
+  timeout: 5s
+  num_conns: 2
+
+redis:
+  addr: "192.168.50.201:6379"
+  password: "Mephisto80"
+  db: 0
+  pool_size: 10
+  min_idle_conns: 5
+  max_retries: 3
+  dial_timeout: 5s
+  read_timeout: 3s
+  write_timeout: 3s
+
+# ----- BGE-M3 嵌入向量服務 (TEI) -----
+embedding:
+  # HTTP 模式：透過 agent_embedding 服務處理 embed + Cassandra 儲存（推薦）
+  mode: "http"
+  http_base_url: "https://192.168.50.104:8502"
+  timeout_sec: 30
+
+  # semantic memory 用的直連 BGE-M3 embedding（跟 agent_embedding 用同一顆模型/位址）
+  provider: "ollama"                            # ollama | tei
+  tei_endpoint: "http://192.168.50.201:11434"   # BGE-M3 服務（Ollama 或 TEI）
+  model: "bge-m3"                               # Ollama tag（TEI 用 HF repo id）
+
+# ----- agent_registry 自動註冊 -----
+# 啟動時向 registry 註冊 Agent Card 並定期心跳（Search() 同分依 last_seen_at DESC）；
+# url 留空 → 停用自動註冊。多實例部署時每個實例用自己的 agent.id 各自註冊。
+registry:
+  url: "https://192.168.50.104:8500"
+  heartbeat_sec: 60
+  public_url: ""               # 留空 → 用 Agent Card 推導的對外 URL（server.addr）
+  grpc_endpoint: ""            # 留空 → 依 grpc.addr 推導（":9091" → "192.168.50.104:9091"）
+  insecure_skip_verify: true   # agent_registry 用自簽憑證（dev）
+
+# ----- agent_critic 服務（gRPC，A3 Critic/Gatekeeper）-----
+# 產出答案後送去評分（completeness/grounding/faithfulness）；grpc_addr 留空 → 停用。
+critic:
+  grpc_addr: "192.168.50.104:8511"
+  insecure_skip_verify: true   # agent_critic 用自簽憑證（dev）
+  # dev_pub_0.9 內部 mTLS 呼叫端憑證（CN=agents）；dev 留空 = InsecureSkipVerify 舊行為
+  client_cert_file: ""         # 例 "certs/client.crt"
+  client_key_file: ""          # 例 "certs/client.key"
+  ca_file: ""                  # 例 "certs/internal-ca.crt"（設定後 insecure_skip_verify 無效）
+  dial_timeout_sec: 5
+  call_timeout_sec: 5
+  max_revisions: 1             # 未通過時最多重新生成幾次；0 = 只評分不重生
+
+# ----- agent_graph 服務（gRPC，A4 Knowledge Agent）-----
+# graph_query 工具的後端；grpc_addr 留空 → 工具停用（不影響其他推理路徑）。
+graph:
+  grpc_addr: "192.168.50.104:8512"
+  insecure_skip_verify: true   # agent_graph 用自簽憑證（dev）
+  # dev_pub_0.9 內部 mTLS 呼叫端憑證（CN=agents）；dev 留空 = InsecureSkipVerify 舊行為
+  client_cert_file: ""         # 例 "certs/client.crt"
+  client_key_file: ""          # 例 "certs/client.key"
+  ca_file: ""                  # 例 "certs/internal-ca.crt"（設定後 insecure_skip_verify 無效）
+  dial_timeout_sec: 5
+  call_timeout_sec: 5
+
+# ----- web_browse 工具（遠端 browserless）-----
+# ws_url 留空 → 不註冊 web_browse 工具；部署環境有 browserless sidecar 時填入啟用。
+browser:
+  ws_url: "ws://192.168.50.104:33000?token=800500500"   # browserless（帶 token）；空 = 停用 web_browse
+  nav_timeout_sec: 45       # 導頁 + 抓取逾時
+  max_body_chars: 12000     # 送摘要 LLM 前的 body 上限
+
+# ----- agent_memory 服務（gRPC）-----
+# 所有記憶資料一律透過此 gRPC 端點打 agent_memory；必填，本服務不再直連 Postgres 存記憶。
+memory:
+  grpc_addr: "192.168.50.104:8510"
+  insecure_skip_verify: true   # agent_memory 用自簽憑證（dev）
+  # dev_pub_0.9 內部 mTLS 呼叫端憑證（CN=agents）；dev 留空 = InsecureSkipVerify 舊行為
+  client_cert_file: ""         # 例 "certs/client.crt"
+  client_key_file: ""          # 例 "certs/client.key"
+  ca_file: ""                  # 例 "certs/internal-ca.crt"（設定後 insecure_skip_verify 無效）
+  dial_timeout_sec: 5
+  call_timeout_sec: 5
+  dimension: 1024              # Dense vector 維度
+  batch_size: 32               # 批次嵌入大小
+  timeout: 30s
+  max_retries: 3
+  retry_backoff: 500ms
+
+  # Chunking 參數
+  chunk_size: 512              # 字元
+  chunk_overlap: 50            # 字元重疊
+
+  # 快取設定（可選）
+  cache_enabled: true
+  cache_ttl: 24h              # 嵌入結果快取時長
+
+# ----- 混合搜索 (Hybrid Search) -----
+search:
+  hybrid_enabled: true
+  dense_top_k: 20             # Cassandra ANN 回傳數量
+  sparse_top_k: 20            # PostgreSQL 稀疏向量回傳數量
+  final_top_k: 5              # 融合後最終數量
+
+  # RRF (Reciprocal Rank Fusion) 評分參數
+  rrf_k: 60                   # 1/(60 + rank)
+
+  # 相似度閾值
+  similarity_threshold: 0.3   # Cosine similarity 最低門檻
+
+  # 超時控制
+  dense_timeout: 5s
+  sparse_timeout: 5s
+  total_timeout: 10s
+
+  # 快取
+  cache_results: true
+  cache_ttl: 1h
+
+# ----- Context 組裝（ContextBuilder 預設配額；可被 SKILL.md Identity context_* 覆蓋） -----
+context:
+  # 各類記憶的取樣數量
+  personal_memory: 1          # PersonalMemory（anchor，固定 1）
+  procedural_memory: 3        # ProceduralMemory（相關心智模型 top-K）
+  rag_chunks: 5               # RAG Chunks（向量檢索結果 top-K）
+  episodic_memory: 2          # EpisodicMemory（相似對話 top-K）
+  semantic_memory: 3          # LongTermMemory（BGE-M3 ANN 相似度 top-K；需 embedding.provider 設定）
+
+  # 字元預算（粗估 1 token ≈ 4 chars；4000 tokens ≈ 16000 chars）
+  max_context_chars: 16000
+
+  # Token 預算（以 HeuristicCounter 估算，CJK-aware；可注入 tiktoken）
+  max_context_tokens: 4000
+  system_prompt_tokens: 500   # 預留給 system prompt（未使用）
+  memory_priority:
+    - "personal_memory"
+    - "procedural_memory"
+    - "rag_chunks"
+    - "episodic_memory"
+
+# ----- Tools（Tool Calling 迴圈控制；只在 LLM 支援 tool calling 時啟用） -----
+tools:
+  max_iterations: 8         # 最多 LLM ↔ tool 來回幾次
+  tool_timeout_sec: 30      # 單一 tool call 執行 timeout
+
+# ----- 短期記憶（POST /api/chat 多輪對話歷史，Redis-backed）-----
+# Redis 未連上時自動停用（退回改動前的單輪行為）。
+chat_session:
+  max_turns: 40    # 每個 session 最多保留幾則訊息（user+assistant 各算一則）
+  ttl_sec: 7200     # 每次寫入後刷新的過期秒數（2 小時）
+
+# ----- Ingest（文件上傳 + PDF/圖片抽文字；POST /api/ingest/upload） -----
+ingest:
+  uploads_dir: ./uploads     # 上傳檔案落地目錄
+  vision:                    # 圖片用視覺 LLM（Ollama）抽文字；停用時圖片上傳會被拒
+    enabled: true
+    ollama_url: ""           # 空 → registry 預設 host（192.168.50.104:11434）
+    model: ""                # 空 → 由 role 解析；寫死 model 時優先
+    role: "vision"           # vision / vision_uncensored；ModelRegistry 解析（預設 qwen3-vl:4b）
+    prompt: ""               # 空 → 用內建 OCR/描述提示
+    timeout_sec: 120
+
+# ----- Retrieval（HybridSearcher：dense + sparse + RRF Fusion） -----
+# 2026-05-08：BGE-M3 sparse 已放棄；sparse 路徑預設 NopSparseSearcher（dense-only）。
+retrieval:
+  dense_top_n: 20            # dense ANN 撈取上限
+  sparse_top_n: 20           # sparse 撈取上限（nop 模式不生效）
+  final_top_k: 5             # RRF 融合後最終回傳（會被 context.rag_chunks 覆蓋）
+  rrf_k: 60                  # RRF 公式 k 常數
+  similarity_threshold: 0.0  # dense 相似度門檻；0 = 不過濾
+
+logger:
+  level: debug            # debug, info, notice, warning, error, emergency
+  output: both            # stdout, file, both
+  file: logs/api.log
+  max_size: 100           # MB
+  max_age: 30             # days
+  max_backups: 10
+  compress: true
+  format: json            # json, text
+  colors: true
+  time_format: "2006-01-02 15:04:05"
+
+api:
+  version: "v1"
+  docs_enabled: true
+  docs_path: "/docs"
+  
+  rate_limit:
+    enabled: true
+    requests_per_minute: 60
+    burst: 10
+    
+  cors:
+    enabled: true
+    allowed_origins:
+      - "*"
+    allowed_methods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - OPTIONS
+      - PATCH
+    allowed_headers:
+      - Content-Type
+      - Authorization
+      - X-Request-ID
+    expose_headers:
+      - X-Request-ID
+      - X-RateLimit-Limit
+      - X-RateLimit-Remaining
+    max_age: 86400
+
+monitoring:
+  metrics_enabled: true
+  metrics_path: "/metrics"
+  health_path: "/health"
+  trace_enabled: false
+  trace_provider: "jaeger"
+  trace_endpoint: "${TRACE_ENDPOINT}"
+  # Ollama/GPU 使用狀況監控（app/services/gpu_monitor.go；GET /api/monitor/gpu 可查）
+  gpu:
+    enabled: true            # 未設 = 啟用；false 關閉
+    # 空 = 用 llm.yaml 的 chat URL（.104，LLM/vision 推理主機）。
+    # 刻意不含 .201（BGE-M3 embedding 專用）——使用者明確指示 .201 不用監控，
+    # 監控只跟著推理負載走。
+    ollama_urls: []
+    idle_interval_sec: 600   # 空閒背景觀測間隔（10 分鐘）；期間有推理取樣過就跳過
+    stale_after_sec: 30      # 推理前檢查：快取超過此秒數才重新取樣
+    nvidia_smi: true         # 嘗試本機 nvidia-smi（agents 與 GPU 同機才有意義；找不到自動停用）
+    util_warn_percent: 95    # 本機 GPU 使用率警告門檻
+    vram_warn_percent: 90    # 本機 VRAM 佔用率警告門檻
+
+# ----- gRPC Server -----
+# 本 agent 對外提供 AgentService/Inbound RPC 的監聽地址（與 HTTP server 分離的埠號）
+grpc:
+  addr: "192.168.50.104:9091"
+  # ── dev_pub_0.9 內部 mTLS（部署時啟用；dev 留空 = 舊行為單向 TLS）──
+  ca_file: ""                       # 例 "certs/internal-ca.crt"
+  allowed_client_cns: []            # 例 ["agent_gateway"]；mTLS 啟用時空清單 = 拒絕全部
+  trusted_ips: []                   # dev_090 內網通道：例 ["192.168.50.103"]，命中即免憑證/免 Key 放行
+  # Inbound 推理 worker pool（限流）
+  workers: 8         # <=0 → 8
+  queue_size: 32     # <=0 → workers*4；佇列滿時 Inbound 回 ack.Code=429
+
+# ----- Agent Identity -----
+# OutboundMsg.From に使用される本 agent の識別子；downstream config の agent.id と区別すること
+agent:
+  id: "agent-main"
+  pool_id: ""   # shared memory pool；同 pool_id 的 agent 互相可讀寫 shared_read/shared_write 工具的資料
+
+# ----- Event Bus（v2 架構：Redis Stream，與 Redis 共用連線） -----
+# ingest 任務完成 / 失敗時自動發送事件，供其他服務訂閱（解耦設計）
+eventbus:
+  enabled: true
+  stream_ingest_started:   "ingest.started"
+  stream_ingest_completed: "ingest.completed"
+  stream_ingest_failed:    "ingest.failed"
+  max_len: 10000                   # 環形緩衝；舊事件自動丟棄
+  publish_timeout_sec: 1
+
+# ----- Downstream Agents -----
+# 本 agent 對下游 agent 推送訊息 (OutboundMsg) 時使用的連線設定。
+# OutboundMsg.To 會被用來查表找到對應的 agent.id 並取得其 endpoint。
+downstream:
+  # gRPC client 預設參數 (個別 agent 未指定時套用)
+  defaults:
+    dial_timeout: 3s        # 建立連線超時
+    call_timeout: 5s        # 單次呼叫超時
+    tls_enabled: false
+    insecure_skip_verify: false
+    max_retries: 2
+    retry_backoff: 200ms
+
+  # 已知下游 agent 清單；以 id 為 key 匹配 OutboundMsg.To
+  agents:
+    - id: "agent-b"
+      endpoint: "192.168.50.104:9091"     # host:port (gRPC) — 本 agent 自己的 gRPC server，已開 TLS
+      tls_enabled: true
+      ca_file: "certs/server.crt"    # 自簽憑證本身即為 CA（gencert 產生時 IsCA: true）
+      call_timeout: 5s
+      tags: ["primary"]
+
+    - id: "agent-c"
+      endpoint: "agent-c.internal:9091"
+      tls_enabled: true
+      ca_file: "certs/downstream-ca.crt"
+      server_name: "agent-c.internal"
+      call_timeout: 10s
+      tags: ["secondary"]

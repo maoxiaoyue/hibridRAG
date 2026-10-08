@@ -1,0 +1,64 @@
+server:
+  protocol: http2
+  addr: "192.168.50.104:8090"          # HTTP/2 (h2, TLS + ALPN)
+  read_timeout: 30s
+  write_timeout: 30s
+  idle_timeout: 120
+  max_handlers: 1000
+  max_concurrent_streams: 250
+  max_read_frame_size: 1048576
+  tls:
+    enabled: true
+    cert_file: "certs/server.crt"
+    key_file: "certs/server.key"
+    auto_cert: false
+    domains: []
+
+grpc:
+  addr: :9090          # gRPC AgentService/Inbound
+
+registry:
+  url: "https://192.168.50.104:8500"
+
+gateway:
+  name: "A2A Gateway"
+  description: "Central entry point — A2A JSON-RPC (HTTP) + gRPC AgentService"
+  version: "1.0.0"
+  public_url: "https://192.168.50.104:8090"
+  downstream_timeout_sec: 30
+  grpc_dial_timeout_sec: 5
+
+# TLS options for outbound A2A HTTP/2 requests to downstream agents
+a2a_client:
+  insecure_skip_verify: true   # dev: accept self-signed certs from agents service
+  ca_file: ""                  # prod: set path to CA PEM to verify downstream certs
+
+logger:
+  level: info
+  output: stdout
+  colors: true
+
+# ── dev_pub_0.9：ClientGateway（client 全部流量的單一入口）────────────────────
+# 對內轉發目標 + gateway 自己的內部 mTLS 呼叫端憑證（CN=agent_gateway）
+internal:
+  agents_grpc_addr: "192.168.50.104:9091"          # 留空 → Chat/Upload/Job 回 Unavailable
+  graph_grpc_addr: "192.168.50.104:8512"           # 留空 → Graph* 回 Unavailable
+  embedding_base_url: "https://192.168.50.104:8502" # 留空 → VerifySearch 回 Unavailable
+  agents_http_base: "https://192.168.50.104:18080" # ChatStatus 對話階段輪詢（內部 HTTP）；留空 → 回空狀態
+  client_cert_file: ""                        # 例 "certs/client.crt"（部署時啟用 mTLS）
+  client_key_file: ""                         # 例 "certs/client.key"
+  ca_file: ""                                 # 例 "certs/internal-ca.crt"
+  call_timeout_sec: 120                       # Chat 推理可能較久
+
+# API Key 認證（一 Key 一裝置）；公網部署必開
+auth:
+  enabled: true                       # 外網 client 需帶 sak_ API key
+  trusted_ips: ["192.168.50.103"]     # 內網 Windows 開發機 免 API key（防火牆必須已擋外網）
+
+# api_keys 表所在 PG（沿用 192.168.50.201 實例）
+database:
+  driver: postgres
+  dsn: "postgres://mcpadm:Mephisto80@192.168.50.201:5433/mcp?sslmode=disable"
+  max_idle_conns: 4
+  max_open_conns: 16
+  auto_migrate: true

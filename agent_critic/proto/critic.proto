@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package agent_critic.v1;
+
+option go_package = "agent_critic/pb/criticpb;criticpb";
+
+// CriticService 提供答案品質評估（A3 Critic / Gatekeeper）。
+// 呼叫方為 agents 服務（或 orchestrator）：研究產出答案後送來評分，
+// 依 passed 與 feedback 決定是否進入 revision loop。
+service CriticService {
+  rpc Evaluate(EvaluateReq) returns (Evaluation);
+  rpc GetEvaluation(GetEvaluationReq) returns (Evaluation);
+  rpc ListBySession(ListBySessionReq) returns (ListBySessionResp);
+}
+
+message EvaluateReq {
+  string agent_id = 1;
+  string session_id = 2;
+  string question = 3;          // 原始（或 refined）問題
+  string answer = 4;            // 待評估答案
+  repeated string sources = 5;  // 檢索到的證據片段（grounding 依據）
+  int32 revision = 6;           // 第幾輪修訂（首輪為 0）
+}
+
+message Evaluation {
+  string id = 1;
+  string agent_id = 2;
+  string session_id = 3;
+  int32 revision = 4;
+  double completeness = 5;      // 問題關鍵詞在答案中的覆蓋率 0-1
+  double grounding = 6;         // 答案關鍵詞在 sources 中的支持率 0-1
+  double faithfulness = 7;      // 有 sources 支持的答案句子比例 0-1
+  double overall = 8;           // 加權總分 0-1
+  bool passed = 9;              // overall >= pass_threshold
+  repeated string feedback = 10; // 給 revision 的具體建議
+  string created_at = 11;       // RFC3339
+}
+
+message GetEvaluationReq {
+  string id = 1;
+}
+
+message ListBySessionReq {
+  string session_id = 1;
+  int32 limit = 2; // 預設 20
+}
+
+message ListBySessionResp {
+  repeated Evaluation items = 1;
+}

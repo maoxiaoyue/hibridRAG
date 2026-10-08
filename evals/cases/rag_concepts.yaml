@@ -1,0 +1,125 @@
+# rag_qa 類案例：每筆附上 input.context_sources（模擬已檢索到的證據片段），
+# 問題只能從給定 sources 回答——用來之後測「答案是否忠於 sources」（grounding/
+# faithfulness，屬於 LLM-as-judge 的評分範圍，見 evals 計畫 Phase 3）。
+# BLEU 階段一樣可用 expected.answer 當參考句計分。
+
+- id: rag-001
+  agent_id: demo
+  category: rag_qa
+  tags: [rag, embedding]
+  input:
+    question: "這個平台的 RAG 用哪個 embedding 模型？向量維度是多少？"
+    context_sources:
+      - "本平台 RAG 唯一嵌入模型為 BGE-M3（dense 1024 維），透過 agent_embedding 服務統一產生，寫入 Cassandra 供混合檢索使用。"
+  expected:
+    answer: "BGE-M3，dense 向量 1024 維。"
+    key_points:
+      - "BGE-M3"
+      - "1024 維"
+  difficulty: easy
+
+- id: rag-002
+  agent_id: demo
+  category: rag_qa
+  tags: [rag, retrieval]
+  input:
+    question: "HybridSearcher 是怎麼把 dense 和 sparse 檢索結果合併的？"
+    context_sources:
+      - "HybridSearcher 並發跑 dense（向量相似度）與 sparse（全文檢索）兩條查詢，各自取前 K 筆後用 RRF（Reciprocal Rank Fusion）依名次融合排序，不直接比較兩種異質分數。"
+  expected:
+    answer: "並發做 dense 與 sparse 兩種檢索，再用 RRF（Reciprocal Rank Fusion）依名次融合，不直接比較分數。"
+    key_points:
+      - "並發跑 dense 與 sparse"
+      - "RRF 依名次融合"
+  difficulty: medium
+
+- id: rag-003
+  agent_id: demo
+  category: rag_qa
+  tags: [memory, episodic]
+  input:
+    question: "episodic memory 的資料是何時、由誰寫入的？"
+    context_sources:
+      - "每輪對話產生最終回覆後，EpisodicWriter 會把使用者問題、回覆摘要與時間戳寫入 episodic_memory 表，形成封閉學習迴圈，供之後對話回顧使用。"
+  expected:
+    answer: "每輪對話產生最終回覆後，由 EpisodicWriter 寫入 episodic_memory。"
+    key_points:
+      - "每輪對話產生最終回覆後"
+      - "EpisodicWriter 負責寫入"
+  difficulty: easy
+
+- id: rag-004
+  agent_id: demo
+  category: rag_qa
+  tags: [grpc, mtls]
+  input:
+    question: "內部服務間的 gRPC 要怎麼判斷呼叫端是不是合法的？"
+    context_sources:
+      - "內部 gRPC server 全面啟用 mutual TLS，並在 interceptor 檢查對端憑證的 CN 是否在允許清單內；trusted_ips 命中時可豁免憑證檢查，用於內網開發通道。"
+  expected:
+    answer: "用 mTLS 驗證憑證，interceptor 檢查對端憑證的 CN 是否在允許清單裡；trusted_ips 命中可豁免。"
+    key_points:
+      - "mTLS + CN 允許清單"
+      - "trusted_ips 可豁免（內網開發用）"
+  difficulty: medium
+
+- id: rag-005
+  agent_id: demo
+  category: rag_qa
+  tags: [gateway, apikey]
+  input:
+    question: "外網 client 的 API Key 是怎麼跟裝置綁定的？"
+    context_sources:
+      - "API Key 首次使用時以「先到先綁」（TOFU）方式綁定裝置指紋；同一把 key 只能綁一台裝置，換機需由部署機執行 unbind 指令重置綁定。"
+  expected:
+    answer: "首次使用時以 TOFU（先到先綁）方式綁定裝置指紋，一把 key 只能綁一台裝置，換機要在部署機 unbind 才能重綁。"
+    key_points:
+      - "TOFU（首次使用即綁定）"
+      - "一 key 一裝置，換機需 unbind"
+  difficulty: medium
+
+- id: rag-006
+  agent_id: demo
+  category: rag_qa
+  tags: [knowledge-graph, kuzu]
+  input:
+    question: "知識圖譜的向量索引存在哪裡？用什麼演算法？"
+    context_sources:
+      - "圖譜與向量都存在 embedded Kùzu 資料庫的單一檔案裡；向量索引用 HNSW（Hierarchical Navigable Small World）演算法建立在 EntityEmbedding node table 上。"
+  expected:
+    answer: "存在 embedded Kùzu 的同一個檔案裡，向量索引用 HNSW 演算法。"
+    key_points:
+      - "存在 Kùzu 檔案（embedded）"
+      - "HNSW 演算法"
+  difficulty: medium
+
+- id: rag-007
+  agent_id: demo
+  category: rag_qa
+  tags: [tool-loop, critic]
+  input:
+    question: "答案沒通過 Critic 評分時會發生什麼事？"
+    context_sources:
+      - "agent_critic 評估答案後若 passed=false，AgentServer 會觸發 reviseWithCritic：把評分回饋併入 prompt 重新生成，最多重試 critic.max_revisions 次，超過次數就回傳最後一次生成結果。"
+  expected:
+    answer: "會把評分回饋併入 prompt 重新生成（revision loop），最多重試設定的次數，超過就回傳最後一次結果。"
+    key_points:
+      - "評分回饋併入 prompt 重新生成"
+      - "有最大重試次數上限"
+  difficulty: hard
+
+- id: rag-008
+  agent_id: demo
+  category: rag_qa
+  tags: [session, redis]
+  input:
+    question: "多輪對話的歷史記錄存在哪裡？有沒有上限？"
+    context_sources:
+      - "短期記憶由 Redis-backed SessionStore 管理，整包對話歷史存成一個 JSON blob，最多保留 40 輪、TTL 兩小時；Redis 未連線時自動降級成單輪對話，不影響服務可用性。"
+  expected:
+    answer: "存在 Redis（SessionStore，整包 JSON blob），最多保留 40 輪、TTL 兩小時；Redis 斷線會降級成單輪對話。"
+    key_points:
+      - "Redis-backed SessionStore"
+      - "上限 40 輪，TTL 2 小時"
+      - "Redis 斷線降級單輪，不中斷服務"
+  difficulty: hard

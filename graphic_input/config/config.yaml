@@ -1,0 +1,56 @@
+server:
+  protocol: http2
+  addr: "192.168.50.104:8505"          # HTTP/2 (h2, TLS + ALPN)；dev_090 client「Graph Input」分頁用
+  read_timeout: 300s   # 上傳 + OCR/抽取可能較久
+  write_timeout: 300s
+  idle_timeout: 120
+  max_handlers: 1000
+  max_concurrent_streams: 250
+  max_read_frame_size: 1048576
+  tls:
+    enabled: true
+    cert_file: "certs/server.crt"
+    key_file: "certs/server.key"
+    auto_cert: false
+    domains: []
+
+grpc:
+  addr: "192.168.50.104:8513"          # GraphicInputService gRPC（內網 CLI/腳本）
+  ca_file: ""                       # 例 "certs/internal-ca.crt"
+  allowed_client_cns: []
+  trusted_ips: []                   # dev_090 內網通道：例 ["192.168.50.103"]
+
+# agent_graph（唯一下游，硬依賴）
+graph:
+  grpc_addr: "192.168.50.104:8512"
+  insecure_skip_verify: true        # 自簽憑證（dev）；ca_file 設定後無效
+  client_cert_file: ""              # 例 "certs/client.crt"（CN=graphic_input）
+  client_key_file: ""
+  ca_file: ""
+  dial_timeout_sec: 5
+  call_timeout_sec: 120             # IngestText 要跑 LLM 抽取
+
+# Obsidian vault（「Obsidian 版本」落地；必須與 agent_graph 的 md.yaml vault.path 同一目錄）
+vault:
+  path: ""                          # 空 = 停用 obsidian 路徑
+  inbox_dir: "inbox"
+  attachments_dir: "attachments"
+
+# 圖片 OCR（直接打 Ollama，同 agent_graph 慣例）
+vision:
+  ollama_url: "http://192.168.50.104:11434"
+  model: "qwen3-vl:4b"
+  prompt: ""                        # 空 → 內建預設
+  timeout_sec: 120
+
+database:
+  driver: postgres
+  dsn: "postgres://mcpadm:Mephisto80@192.168.50.201:5433/mcp?sslmode=disable"
+  max_idle_conns: 4
+  max_open_conns: 16
+  auto_migrate: true
+
+logger:
+  level: info
+  output: stdout
+  colors: true

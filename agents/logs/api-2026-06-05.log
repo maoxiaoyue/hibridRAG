@@ -1,0 +1,32 @@
+2026/06/05 22:23:00 [32m[INFO][0m Starting single_agent service...
+2026/06/05 22:23:00 [32m[INFO][0m Running database migrations...
+2026/06/05 22:23:00 [32m[INFO][0m LLM client ready: provider=ollama
+2026/06/05 22:23:00 [32m[INFO][0m Outbound dispatcher ready: 2 downstream agents
+2026/06/05 22:23:00 [32m[INFO][0m IngestRunner: HTTP mode → http://localhost:8502 (timeout=30s)
+2026/06/05 22:23:00 [32m[INFO][0m Vision extractor ready: http://192.168.50.104:11434 model=qwen3-vl:4b
+2026/06/05 22:23:00 [32m[INFO][0m EventBus ready (Redis Stream): ingest.started / ingest.completed / ingest.failed
+2026/06/05 22:23:00 [32m[INFO][0m HybridSearcher ready (dense=HTTP http://localhost:8502, sparse=nop; top_n=20/20, k=60, threshold=0.00)
+2026/06/05 22:23:00 [32m[INFO][0m ContextBuilder ready (RAG via http://localhost:8502; quotas: personal=1 procedural=3 rag=5 episodic=2; budget: chars=16000 tokens=4000)
+2026/06/05 22:23:00 [32m[INFO][0m Worker pool ready: workers=8 queue=32
+2026/06/05 22:23:00 [32m[INFO][0m Tool registry ready: 3 tools; LLM supports tool calling
+2026/06/05 22:23:00 [32m[INFO][0m HTTP server starting on :18080 (protocol=http2)
+2026/06/05 22:23:00 [32m[INFO][0m gRPC server starting on :9091 (agent_id=agent-main)
+2026/06/05 22:23:00 [32m[INFO][0m AutoSync: manifest saved to .hyp/context.yaml
+2026/06/05 22:23:00 [32m[INFO][0m Starting HTTP/2 server with HTTP/1.1 fallback on :18080
+2026/06/05 22:23:00 [33m[WARNING][0m Failed to inherit listener: file file+net listener: An operation was attempted on something that is not a socket.
+2026/06/05 22:27:17 [32m[INFO][0m Starting single_agent service...
+2026/06/05 22:27:17 [32m[INFO][0m Running database migrations...
+2026/06/05 22:27:17 [32m[INFO][0m LLM client ready: provider=ollama
+2026/06/05 22:27:17 [32m[INFO][0m Outbound dispatcher ready: 2 downstream agents
+2026/06/05 22:27:17 [32m[INFO][0m IngestRunner: HTTP mode → http://localhost:8502 (timeout=30s)
+2026/06/05 22:27:17 [32m[INFO][0m Vision extractor ready: http://192.168.50.104:11434 model=qwen3-vl:4b
+2026/06/05 22:27:17 [32m[INFO][0m EventBus ready (Redis Stream): ingest.started / ingest.completed / ingest.failed
+2026/06/05 22:27:17 [32m[INFO][0m HybridSearcher ready (dense=HTTP http://localhost:8502, sparse=nop; top_n=20/20, k=60, threshold=0.00)
+2026/06/05 22:27:17 [32m[INFO][0m ContextBuilder ready (RAG via http://localhost:8502; quotas: personal=1 procedural=3 rag=5 episodic=2; budget: chars=16000 tokens=4000)
+2026/06/05 22:27:17 [32m[INFO][0m Worker pool ready: workers=8 queue=32
+2026/06/05 22:27:17 [32m[INFO][0m Tool registry ready: 3 tools; LLM supports tool calling
+2026/06/05 22:27:17 [32m[INFO][0m HTTP server starting on :18080 (protocol=http2)
+2026/06/05 22:27:17 [32m[INFO][0m gRPC server starting on :9091 (agent_id=agent-main)
+2026/06/05 22:27:17 [32m[INFO][0m AutoSync: manifest saved to .hyp/context.yaml
+2026/06/05 22:27:17 [32m[INFO][0m Starting HTTP/2 server with HTTP/1.1 fallback on :18080
+2026/06/05 22:27:17 [33m[WARNING][0m Failed to inherit listener: file file+net listener: An operation was attempted on something that is not a socket.

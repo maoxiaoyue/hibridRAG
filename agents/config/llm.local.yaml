@@ -1,0 +1,16 @@
+# LLM config 指向本地 llama.cpp server（127.0.0.1:18080）
+# 模型：Qwen3.6-35B-A3B-Uncensored（OpenAI-compatible /v1/chat/completions）
+#
+# 用法：
+#   go run ./cmd/llm-demo --config config/llm.local.yaml \
+#     --skill skills/demo/SKILL.md --prompt "你好"
+
+mode: api
+
+api:
+  provider: "custom"                   # OpenAI-compatible 協定
+  base_url: "http://127.0.0.1:18080"   # client 會自動補 /v1/chat/completions
+  model: "Nemotron-3-Nano-Omni-30B-A3B-Reasoning-APEX-I-Balanced.gguf"
+  api_key: ""                          # 本地伺服器免驗證
+  timeout: 180                         # thinking 模型耗時較長
+  max_tokens: 2048                     # 至少要能涵蓋 reasoning + content

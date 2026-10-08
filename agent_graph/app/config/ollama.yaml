@@ -1,0 +1,16 @@
+# agent_graph 固定模型設定 — 跟 agents/ 的 ModelRegistry（可依 persona 動態切換）
+# 不同，這裡只做兩件事：Obsidian 同步時的實體/關係抽取（chat）與實體描述向量化
+# （embedding），兩者都用固定模型，不需要動態解析。直接打 Ollama HTTP API，
+# 不經過 agent_embedding（比照 agents/ 的 SemanticMemory 慣例）。
+
+chat:
+  url: "http://192.168.50.104:11434"
+  model: "qwen3.5:9b"     # 結構化抽取任務用得到 tool-calling 等級即可，不需要 35b
+  timeout_sec: 60
+  temperature: 0.1        # 抽取任務要穩定輸出，不要求創意
+
+embedding:
+  url: "http://192.168.50.201:11434"
+  model: "bge-m3"         # 與 agents/agent_memory 的 BGE-M3 embedding 保持一致（1024 維）
+  dimension: 1024
+  timeout_sec: 30

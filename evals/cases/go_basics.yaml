@@ -1,0 +1,159 @@
+# general_chat 類案例：Go 語言基礎事實題，答案相對標準（適合 BLEU）。
+# agent_id=demo 對應 agents/skills/demo/SKILL.md（「小柴」，Go 後端開發專長）。
+
+- id: go-001
+  agent_id: demo
+  category: general_chat
+  tags: [go, defer]
+  input:
+    question: "Go 的 defer 陳述式執行順序是什麼？"
+  expected:
+    answer: "後進先出（LIFO），最後一個 defer 最先執行，且都在函式返回前執行完畢。"
+    key_points:
+      - "後進先出 / LIFO"
+      - "函式返回前執行"
+  difficulty: easy
+
+- id: go-002
+  agent_id: demo
+  category: general_chat
+  tags: [go, concurrency]
+  input:
+    question: "Go 的 goroutine 跟作業系統執行緒有什麼差異？"
+  expected:
+    answer: "goroutine 是 Go runtime 管理的輕量執行單位，由 runtime 排程到少量 OS 執行緒上，初始堆疊只有幾 KB 可動態成長，建立與切換成本遠低於 OS 執行緒。"
+    key_points:
+      - "由 Go runtime 排程，不是 OS 直接排程"
+      - "堆疊小、可動態成長"
+      - "建立成本低，可開大量"
+  difficulty: easy
+
+- id: go-003
+  agent_id: demo
+  category: general_chat
+  tags: [go, channel]
+  input:
+    question: "unbuffered channel 跟 buffered channel 的差異？"
+  expected:
+    answer: "unbuffered channel 發送方會阻塞直到有接收方準備好，是同步交手；buffered channel 在緩衝區未滿前發送方不會阻塞，是非同步交手。"
+    key_points:
+      - "unbuffered 是同步（發送阻塞直到接收）"
+      - "buffered 緩衝區未滿不阻塞"
+  difficulty: medium
+
+- id: go-004
+  agent_id: demo
+  category: general_chat
+  tags: [go, error-handling]
+  input:
+    question: "Go 慣用的錯誤處理方式是什麼？為什麼不用 exception？"
+  expected:
+    answer: "Go 用多重回傳值把 error 當一般值回傳，呼叫端明確檢查 if err != nil；沒有 exception 機制，讓錯誤路徑在程式碼中顯式可見、不會被意外忽略。"
+    key_points:
+      - "error 是回傳值，不是例外"
+      - "呼叫端顯式檢查 if err != nil"
+  difficulty: easy
+
+- id: go-005
+  agent_id: demo
+  category: general_chat
+  tags: [go, interface]
+  input:
+    question: "Go 的 interface 是如何實作多型的？需要顯式宣告實作嗎？"
+  expected:
+    answer: "Go 的 interface 是結構性型別（structural typing）：只要型別實作了 interface 要求的所有方法就自動滿足該 interface，不需要像 Java 那樣顯式寫 implements。"
+    key_points:
+      - "結構性型別 / 鴨子型別"
+      - "不需要顯式 implements 宣告"
+  difficulty: medium
+
+- id: go-006
+  agent_id: demo
+  category: general_chat
+  tags: [go, slice]
+  input:
+    question: "Go 的 slice 和 array 有什麼差別？"
+  expected:
+    answer: "array 是固定長度的值型別；slice 是對底層 array 的動態視窗（指標 + 長度 + 容量），長度可變，傳遞時是輕量的引用語意。"
+    key_points:
+      - "array 固定長度、值型別"
+      - "slice 動態長度、引用底層 array"
+  difficulty: easy
+
+- id: go-007
+  agent_id: demo
+  category: general_chat
+  tags: [go, context]
+  input:
+    question: "context.Context 主要用來解決什麼問題？"
+  expected:
+    answer: "context.Context 用來在呼叫鏈中傳遞取消訊號、逾時期限與請求範圍的值，讓上游可以統一取消下游所有相關的 goroutine，避免資源洩漏。"
+    key_points:
+      - "傳遞取消訊號 / 逾時"
+      - "避免 goroutine 洩漏"
+  difficulty: medium
+
+- id: go-008
+  agent_id: demo
+  category: general_chat
+  tags: [go, gc]
+  input:
+    question: "Go 的垃圾回收（GC）大致用什麼演算法？"
+  expected:
+    answer: "Go 使用並行、非分代的三色標記清除（tri-color mark-and-sweep）演算法，搭配寫入屏障讓 GC 可以跟應用程式併發執行，盡量減少 STW（stop-the-world）時間。"
+    key_points:
+      - "三色標記清除"
+      - "並行執行、減少 STW"
+  difficulty: hard
+
+- id: go-009
+  agent_id: demo
+  category: general_chat
+  tags: [go, mutex]
+  input:
+    question: "sync.Mutex 跟 sync.RWMutex 該怎麼選？"
+  expected:
+    answer: "讀多寫少的情境用 RWMutex，可以讓多個讀者同時持有讀鎖、只有寫入時才互斥；讀寫頻率相近或臨界區很短時，Mutex 較單純也可能效能更好。"
+    key_points:
+      - "讀多寫少選 RWMutex"
+      - "多個讀者可同時持鎖"
+  difficulty: medium
+
+- id: go-010
+  agent_id: demo
+  category: general_chat
+  tags: [go, module]
+  input:
+    question: "go.mod 裡的 require 跟 replace 分別做什麼？"
+  expected:
+    answer: "require 宣告這個 module 依賴哪些套件與版本；replace 把某個依賴的來源替換成別的路徑或版本（例如指向本地目錄或 fork），常用於本地開發或修補上游 bug。"
+    key_points:
+      - "require 宣告依賴版本"
+      - "replace 替換依賴來源（本地路徑/fork）"
+  difficulty: medium
+
+- id: go-011
+  agent_id: demo
+  category: general_chat
+  tags: [go, panic-recover]
+  input:
+    question: "panic 跟 recover 該怎麼搭配使用？"
+  expected:
+    answer: "recover 只能在 defer 函式裡呼叫才有效，用來攔截 panic、避免整個程式崩潰；一般業務邏輯建議用 error 回傳，panic/recover 保留給真正無法恢復的例外狀況或框架邊界。"
+    key_points:
+      - "recover 必須在 defer 裡呼叫"
+      - "一般錯誤用 error，panic 留給不可恢復狀況"
+  difficulty: medium
+
+- id: go-012
+  agent_id: demo
+  category: general_chat
+  tags: [go, generics]
+  input:
+    question: "Go 1.18 加入的泛型主要解決什麼問題？"
+  expected:
+    answer: "泛型讓函式與型別可以用型別參數寫一份程式碼支援多種型別，避免在泛型出現前只能靠 interface{} + 型別斷言或程式碼產生器來重複實作相同邏輯。"
+    key_points:
+      - "型別參數，一份程式碼支援多型別"
+      - "取代 interface{} + 型別斷言的做法"
+  difficulty: medium

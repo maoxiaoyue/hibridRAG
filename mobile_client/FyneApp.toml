@@ -1,0 +1,6 @@
+[Details]
+Icon = "Icon.png"
+Name = "Agent RAG"
+ID = "com.singleagent.mobileclient"
+Version = "0.9.0"
+Build = 2

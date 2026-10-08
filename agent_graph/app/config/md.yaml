@@ -1,0 +1,14 @@
+# Obsidian vault 同步設定。path 留空 → 同步 worker 停用（僅提供查詢 API）。
+vault:
+  path: "./vault"        # 改成實際的 Obsidian vault 絕對路徑，例如 "D:/Obsidian/MyVault"
+  watch: true            # true：啟動後用 fsnotify 持續監聽變動；false：只做一次性掃描
+  include_ext: [".md"]   # 只處理這些副檔名
+  debounce_ms: 500       # 同一檔案短時間內多次寫入事件合併處理的等待時間
+  export_notes: true     # 圖譜寫入時同步匯出實體 .md 鏡像（未設 = 啟用；false 關閉）
+  export_dir: "entities" # 鏡像匯出子目錄（相對 path）；同步掃描/監聽會排除它（防迴圈）
+  temp_dir: "temp"       # 未分類暫存子目錄（對話/上傳先落這，同步會排除；分類後才進圖譜）
+  digest:                # 知識沉澱管線（temp → 分類 → vault、每日整理切割）
+    enabled: true        #   未設 = 啟用（vault path 有設時）
+    classify_interval_sec: 60     # 分類 worker 掃 temp 的間隔
+    maintain_interval_sec: 86400  # 每日整理間隔（一天）
+    max_category_files: 50        # 分類目錄檔數上限，超過就切割成子分類

@@ -1,0 +1,49 @@
+2026/04/24 01:01:11 [32m[INFO][0m Starting single_agent service...
+2026/04/24 01:01:12 [33m[WARNING][0m Failed to initialize Redis: failed to connect to Redis: dial tcp: address 192.168.50.201: missing port in address
+2026/04/24 01:01:12 [32m[INFO][0m Running database migrations...
+2026/04/24 01:01:12 [32m[INFO][0m Server starting on :18080 (protocol=http3)
+2026/04/24 01:01:12 [32m[INFO][0m AutoSync: manifest saved to .hyp/context.yaml
+2026/04/24 01:01:12 [32m[INFO][0m Starting HTTP/3 server on :18080
+2026/04/24 01:01:12 [35m[EMERGENCY][0m Server error: failed to load TLS certificate: open certs/server.crt: The system cannot find the file specified.
+2026/04/24 17:46:40 [32m[INFO][0m Starting single_agent service...
+2026/04/24 17:46:40 [33m[WARNING][0m Failed to initialize Redis: failed to connect to Redis: dial tcp: address 192.168.50.201: missing port in address
+2026/04/24 17:46:40 [32m[INFO][0m Running database migrations...
+2026/04/24 17:46:40 [32m[INFO][0m Server starting on :18080 (protocol=http3)
+2026/04/24 17:46:40 [32m[INFO][0m AutoSync: manifest saved to .hyp/context.yaml
+2026/04/24 17:46:40 [32m[INFO][0m Starting HTTP/3 server on :18080
+2026/04/24 17:46:40 [35m[EMERGENCY][0m Server error: failed to load TLS certificate: open certs/server.crt: The system cannot find the file specified.
+2026/04/24 19:22:45 [32m[INFO][0m Starting single_agent service...
+2026/04/24 19:22:45 [33m[WARNING][0m Failed to initialize Redis: failed to connect to Redis: dial tcp: address 192.168.50.201: missing port in address
+2026/04/24 19:22:45 [32m[INFO][0m Running database migrations...
+2026/04/24 19:22:45 [32m[INFO][0m Server starting on :18080 (protocol=http3)
+2026/04/24 19:22:45 [32m[INFO][0m AutoSync: manifest saved to .hyp/context.yaml
+2026/04/24 19:22:45 [32m[INFO][0m Starting HTTP/3 server on :18080
+2026/04/24 19:22:52 [32m[INFO][0m Shutdown signal received: interrupt
+2026/04/24 19:22:52 [32m[INFO][0m Server stopped
+2026/04/24 19:22:52 [32m[INFO][0m Received graceful restart signal
+2026/04/24 20:10:06 [32m[INFO][0m Starting single_agent service...
+2026/04/24 20:10:06 [33m[WARNING][0m Failed to initialize Redis: failed to connect to Redis: dial tcp: address 192.168.50.201: missing port in address
+2026/04/24 20:10:06 [32m[INFO][0m Running database migrations...
+2026/04/24 20:10:06 [32m[INFO][0m Server starting on :18080 (protocol=http3)
+2026/04/24 20:10:06 [32m[INFO][0m AutoSync: manifest saved to .hyp/context.yaml
+2026/04/24 20:10:06 [32m[INFO][0m Starting HTTP/3 server on :18080
+2026/04/24 20:10:18 [32m[INFO][0m Received graceful restart signal
+2026/04/24 20:10:18 [32m[INFO][0m Shutdown signal received: interrupt
+2026/04/24 20:10:18 [32m[INFO][0m Server stopped
+2026/04/24 20:10:19 [32m[INFO][0m Starting single_agent service...
+2026/04/24 20:10:19 [33m[WARNING][0m Failed to initialize Redis: failed to connect to Redis: dial tcp: address 192.168.50.201: missing port in address
+2026/04/24 20:10:19 [32m[INFO][0m Running database migrations...
+2026/04/24 20:10:19 [32m[INFO][0m Server starting on :18080 (protocol=http3)
+2026/04/24 20:10:20 [32m[INFO][0m AutoSync: manifest saved to .hyp/context.yaml
+2026/04/24 20:10:20 [32m[INFO][0m Starting HTTP/3 server on :18080
+2026/04/24 20:10:25 [32m[INFO][0m Received graceful restart signal
+2026/04/24 20:10:25 [32m[INFO][0m Shutdown signal received: interrupt
+2026/04/24 20:10:25 [32m[INFO][0m Server stopped
+2026/04/24 20:10:57 [32m[INFO][0m Starting single_agent service...
+2026/04/24 20:10:57 [32m[INFO][0m Running database migrations...
+2026/04/24 20:10:57 [32m[INFO][0m Server starting on :18080 (protocol=http3)
+2026/04/24 20:10:57 [32m[INFO][0m AutoSync: manifest saved to .hyp/context.yaml
+2026/04/24 20:10:57 [32m[INFO][0m Starting HTTP/3 server on :18080
+2026/04/24 20:11:02 [32m[INFO][0m Shutdown signal received: interrupt
+2026/04/24 20:11:02 [32m[INFO][0m Server stopped
+2026/04/24 20:11:02 [32m[INFO][0m Received graceful restart signal

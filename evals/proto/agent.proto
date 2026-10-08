@@ -1,0 +1,145 @@
+syntax = "proto3";
+
+// evals 專用副本，複製自 agents/proto/agent.proto（只改 go_package）。
+// evals 是獨立 Go module，不能直接 import agent/app/models；比照 gatewaypb
+// 在各 client module 間的做法——各自 regenerate 一份 pb，非 replace/vendor。
+// agents 端契約變更時，這份需要跟著手動同步重 generate（見 evals/README.md）。
+
+package agent.v1;
+
+option go_package = "evals/pb/agentpb;agentpb";
+
+service AgentService {
+  rpc Inbound(InboundReq) returns (InboundAck);
+
+  // ---- dev_pub_0.9：供 agent_gateway 轉發 client 流量的同步介面 ----
+  // Chat 對應 REST /api/chat 的 ChatSync 語意（client tools / continuation 全保留）。
+  // evals 只用 Chat（單輪、無 client_tools）。
+  rpc Chat(ChatTurnReq) returns (ChatTurnResp);
+  rpc UploadIngest(stream UploadChunk) returns (UploadAck);
+  rpc GetIngestJob(IngestJobReq) returns (IngestJobResp);
+}
+
+// ---- 核心訊息結構 ----
+
+message Message {
+  string role = 1;
+  string content = 2;
+}
+
+message Metadata {
+  string model = 1;
+  double temperature = 2;
+  bool stream = 3;
+}
+
+message AgentReq {
+  string session_id = 1;
+  string user_id = 2;
+  string agent_id = 3;
+  repeated Message messages = 4;
+  Metadata metadata = 5;
+}
+
+message AgentResp {
+  string session_id = 1;
+  string delta = 2;
+  bool done = 3;
+  string finish_reason = 4;
+  int32 code = 5;
+  string error = 6;
+}
+
+message InboundReq {
+  string trace_id = 1;
+  string from = 2;
+  AgentReq payload = 3;
+}
+
+message InboundAck {
+  string trace_id = 1;
+  string message_id = 2;
+  bool accepted = 3;
+  int32 code = 4;
+  string error = 5;
+}
+
+message ChatToolSpec {
+  string name = 1;
+  string description = 2;
+  string schema_json = 3;
+}
+
+message ChatToolCall {
+  string id = 1;
+  string name = 2;
+  string args_json = 3;
+}
+
+message ChatToolResult {
+  string tool_call_id = 1;
+  string name = 2;
+  string content = 3;
+  bool is_error = 4;
+}
+
+message TokenUsage {
+  int32 prompt_tokens = 1;
+  int32 completion_tokens = 2;
+  int32 total_tokens = 3;
+}
+
+message ChatTurnReq {
+  string agent_id = 1;
+  string session_id = 2;
+  repeated Message messages = 3;
+  repeated ChatToolSpec client_tools = 4;
+  string continuation_id = 5;
+  repeated ChatToolResult tool_results = 6;
+  float temperature = 7;
+}
+
+message ChatTurnResp {
+  string status = 1;
+  string content = 2;
+  string session_id = 3;
+  string continuation_id = 4;
+  repeated ChatToolCall tool_calls = 5;
+  TokenUsage usage = 6;
+}
+
+message UploadMeta {
+  string agent_id = 1;
+  repeated string tags = 2;
+}
+
+message UploadChunk {
+  UploadMeta meta = 1;
+  string file_name = 2;
+  bytes data = 3;
+}
+
+message UploadAck {
+  string job_id = 1;
+  string status = 2;
+}
+
+message IngestJobReq {
+  string job_id = 1;
+}
+
+message IngestJobResp {
+  string id = 1;
+  string status = 2;
+  int32 total_chunks = 3;
+  int32 done_chunks = 4;
+  string error = 5;
+}
+
+message OutboundMsg {
+  string trace_id = 1;
+  string from = 2;
+  string to = 3;
+  string direction = 4;
+  AgentReq payload = 5;
+}

@@ -1,0 +1,168 @@
+syntax = "proto3";
+
+package agent_memory.v1;
+
+option go_package = "agent_memory/pb/memorypb;memorypb";
+
+import "google/protobuf/struct.proto";
+
+// MemoryService 提供 agent_memory 對外的 gRPC 存取介面。
+// 涵蓋 agents 服務 ContextBuilder / EpisodicWriter / IngestRunner /
+// memory_read·memory_write 工具實際會用到的操作（見 agents/CLAUDE.md 修正紀錄）。
+service MemoryService {
+  rpc GetPersonalByAgent(GetPersonalByAgentReq) returns (PersonalMemory);
+  rpc UpsertPersonal(UpsertPersonalReq) returns (PersonalMemory);
+  rpc ListProceduralByAgent(ListProceduralByAgentReq) returns (ListProceduralByAgentResp);
+  rpc UpsertProcedural(UpsertProceduralReq) returns (ProceduralMemory);
+  rpc ListEpisodicByAgent(ListEpisodicByAgentReq) returns (ListEpisodicByAgentResp);
+  rpc CreateEpisodic(CreateEpisodicReq) returns (EpisodicMemory);
+
+  // Semantic memory（LongTermMemory，Cassandra + BGE-M3 embedding + SAI ANN）。
+  // caller 負責預先算好 embedding/query_vector（本服務不持有 embedding 後端）。
+  rpc CreateLongTerm(CreateLongTermReq) returns (LongTermMemory);
+  rpc SearchLongTerm(SearchLongTermReq) returns (SearchLongTermResp);
+
+  // Shared memory（跨 agent 協調用的 KV pool，以 pool_id 而非 agent_id 隔離）。
+  rpc GetShared(GetSharedReq) returns (SharedMemory);
+  rpc UpsertShared(UpsertSharedReq) returns (SharedMemory);
+  rpc ListShared(ListSharedReq) returns (ListSharedResp);
+}
+
+message PersonalMemory {
+  string id = 1;
+  string agent_id = 2;
+  google.protobuf.Struct identity = 3;
+  google.protobuf.Struct expression_dna = 4;
+  string created_at = 5; // RFC3339
+  string updated_at = 6; // RFC3339
+}
+
+message ProceduralMemory {
+  string id = 1;
+  string agent_id = 2;
+  string model_name = 3;
+  string content = 4;
+  google.protobuf.Struct heuristics = 5;
+  string created_at = 6; // RFC3339
+  string updated_at = 7; // RFC3339
+}
+
+message EpisodicMemory {
+  string id = 1;
+  string agent_id = 2;
+  string session_id = 3;
+  google.protobuf.Struct turns = 4;
+  string summary = 5;
+  string occurred_at = 6; // RFC3339
+  string created_at = 7;  // RFC3339
+}
+
+message GetPersonalByAgentReq {
+  string agent_id = 1;
+}
+
+message UpsertPersonalReq {
+  string agent_id = 1;
+  google.protobuf.Struct identity = 2;
+  google.protobuf.Struct expression_dna = 3;
+}
+
+message ListProceduralByAgentReq {
+  string agent_id = 1;
+  int32 limit = 2;
+}
+
+message ListProceduralByAgentResp {
+  repeated ProceduralMemory items = 1;
+}
+
+message UpsertProceduralReq {
+  string agent_id = 1;
+  string model_name = 2;
+  string content = 3;
+  google.protobuf.Struct heuristics = 4;
+}
+
+message ListEpisodicByAgentReq {
+  string agent_id = 1;
+  int32 limit = 2;
+}
+
+message ListEpisodicByAgentResp {
+  repeated EpisodicMemory items = 1;
+}
+
+message CreateEpisodicReq {
+  string agent_id = 1;
+  string session_id = 2;
+  google.protobuf.Struct turns = 3;
+  string summary = 4;
+}
+
+// ── Semantic memory (LongTermMemory) ─────────────────────────────────────────
+
+message LongTermMemory {
+  string memory_id = 1;
+  string agent_id = 2;
+  string category = 3; // knowledge / experience / concept / fact / preference
+  string source = 4;
+  string content = 5;
+  string summary = 6;
+  map<string, string> metadata = 7;
+  float importance = 8;
+  string created_at = 9; // RFC3339
+}
+
+message CreateLongTermReq {
+  string agent_id = 1;
+  string category = 2;
+  string source = 3;
+  string content = 4;
+  string summary = 5;
+  map<string, string> metadata = 6;
+  repeated float embedding = 7; // BGE-M3 dense, 1024 dims, required
+  float importance = 8;
+}
+
+message SearchLongTermReq {
+  string agent_id = 1;
+  repeated float query_vector = 2; // BGE-M3 dense, 1024 dims, required
+  int32 top_k = 3;
+  string category = 4; // optional filter
+}
+
+message SearchLongTermResp {
+  repeated LongTermMemory items = 1;
+}
+
+// ── Shared memory (跨 agent 協調 KV pool) ─────────────────────────────────────
+
+message SharedMemory {
+  string pool_id = 1;
+  string key = 2;
+  google.protobuf.Struct value = 3;
+  string written_by = 4; // 最後寫入的 agent_id
+  string created_at = 5; // RFC3339
+  string updated_at = 6; // RFC3339
+}
+
+message GetSharedReq {
+  string pool_id = 1;
+  string key = 2;
+}
+
+message UpsertSharedReq {
+  string pool_id = 1;
+  string key = 2;
+  google.protobuf.Struct value = 3;
+  string written_by = 4;
+}
+
+message ListSharedReq {
+  string pool_id = 1;
+  int32 limit = 2;
+}
+
+message ListSharedResp {
+  repeated SharedMemory items = 1;
+}
